@@ -16,8 +16,6 @@ from datetime import datetime, timedelta
 #import talib as ta
 import numpy as np
 import os, os.path 
-#import tensorflow as tf
-#from tensorflow.contrib import rnn
 from collections import OrderedDict
 import re
 import bs4
