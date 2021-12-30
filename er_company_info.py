@@ -12,27 +12,29 @@ from sqlalchemy import create_engine
 import sqlalchemy
 import datetime as dt
 from datetime import datetime, timedelta
-import talib as ta
+#import talib as ta
 import numpy as np
 import os, os.path 
-import tensorflow as tf
-from tensorflow.contrib import rnn
+#import tensorflow as tf
+#from tensorflow.contrib import rnn
 from collections import OrderedDict
 import re
 import bs4
 import requests
 import time as t
 from dateutil.relativedelta import relativedelta
-from yahoo_earnings_calendar import YahooEarningsCalendar
+#from yahoo_earnings_calendar import YahooEarningsCalendar
 import pandas_datareader.data as web
 import yfinance as yf
+from urllib.parse import quote_plus as urlquote
 
 t_ini = t.time()
 _host = '127.0.0.1'
 _db = 'awesome'
 _user = 'root'
 _password = 'Albert@25'
-engine = create_engine('mysql+pymysql://'+_user+':'+_password+'@'+_host)
+engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
+
 #_table = 'stock.ta_data'
 
 def read_query(engine, query):
