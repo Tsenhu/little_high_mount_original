@@ -96,11 +96,10 @@ def get_price_data(hist_earning):
     price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume)), 
                           columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume'])
     
-    daydream = pd.concat([hist_earning, price_info], axis =1).drop(columns = ['index'])
+    daydream = pd.concat([hist_earning, price_info], axis =1)
     
 
     return daydream
-
 
 
 #any list of stock tickers make sense    
@@ -155,4 +154,4 @@ hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','eps
     
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
-daydream.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
+daydream.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
