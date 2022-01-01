@@ -7,6 +7,10 @@ Created on Sun Jan 12 16:19:50 2020
 
 '''
 https://towardsdatascience.com/a-comprehensive-guide-to-downloading-stock-prices-in-python-2cd93ff821d4
+
+alpha vantage api: DHXUWE4M05O9WHWW
+                   NWZPVM5PMTELG7KX
+                   9YAS0QPC5GFJ1PPP
 '''
 import pandas as pd
 from sqlalchemy import create_engine
@@ -22,7 +26,6 @@ import bs4
 import requests
 import time as t
 from dateutil.relativedelta import relativedelta
-from yahoo_earnings_calendar import YahooEarningsCalendar
 import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
@@ -32,10 +35,8 @@ _host = '127.0.0.1'
 _db = 'awesome'
 _user = 'root'
 _password = 'Albert@25'
-#engine = create_engine('mysql+pymysql://'+_user+':'+_password+'@'+_host)
 engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
-#engine = create_engine('mysql://' + _user + ':' + '%s' +'@' + _host % urlquote(_password))
-#_table = 'stock.ta_data'
+
 
 def read_query(engine, query):
         con = engine.connect()
@@ -60,23 +61,17 @@ def delete_action(engine, query):
         
         print('delete table action finish')
 
-parent_path = 'c:/Users/tsenh/github/awesome/'
-#yec = YahooEarningsCalendar()
+#parent_path = 'c:/Users/tsenh/github/awesome/'
 
 '''
 UPDATE portfolio for option
 '''
-temp_option_rd = pd.read_excel(parent_path + 'option_rd.xlsx')
+#temp_option_rd = pd.read_excel(parent_path + 'option_rd.xlsx')
 
-temp_option_rd.to_sql(name='option_portfolio', con=engine, schema = 'awesome', if_exists='replace', index = False)
+#temp_option_rd.to_sql(name='option_portfolio', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
 
-'''
-initial version
-'''
-'''
-yec = YahooEarningsCalendar()
-hist_er = pd.DataFrame()
+
 for i in range(12):
     
     date_from = dt.datetime(2019,1+i,1)
@@ -90,7 +85,7 @@ for i in range(12):
     
 
 hist_earning =  hist_er[['ticker','startdatetime', 'epsestimate','epsactual','epssurprisepct']].dropna().sort_values(by = ['ticker', 'startdatetime']).reset_index()
-'''
+
 last_db_date = read_query(engine, 'select max(date) as date from awesome.hist_er').iloc[0]['date']
 #last_db_date = dt.date(2019,1,1)
 
