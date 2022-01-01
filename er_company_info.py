@@ -4,9 +4,7 @@ Created on Tue Aug  4 20:42:45 2020
 
 @author: tsenh
 """
-'''
-https://towardsdatascience.com/a-comprehensive-guide-to-downloading-stock-prices-in-python-2cd93ff821d4
-'''
+
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy
@@ -23,7 +21,6 @@ import bs4
 import requests
 import time as t
 from dateutil.relativedelta import relativedelta
-#from yahoo_earnings_calendar import YahooEarningsCalendar
 import pandas_datareader.data as web
 import yfinance as yf
 from urllib.parse import quote_plus as urlquote
@@ -61,10 +58,15 @@ def delete_action(engine, query):
         
         print('delete table action finish')
 
-parent_path = 'c:/Users/tsenh/github/awesome/'
+parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
 ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
 
+'''
+to do add yfinance.recommendations to company info [previous rating and post rating after last er date]
+only capture "buy", 'sell', 'neutral' ... need more details category for all stocks
+
+'''
 
 sector = []
 industry = []
@@ -101,6 +103,7 @@ for i in range(len(ticker)):
     except:  
         company_name.append(np.nan)
     print('{0} takes {1} seconds'.format(ticker['ticker'][i] , t.time()-t0))
+    t.sleep(1)
 print('All takes {0} seconds'.format(t.time()-tt))
 
 ticker['sector'] = sector
@@ -111,5 +114,7 @@ ticker['city'] = city
 ticker['company_name'] = company_name
 
 ticker1= ticker.replace(np.nan, '', regex=True)
+
+
 
 ticker1.to_sql(name='company_info', con=engine, schema = 'awesome', if_exists='replace', index = False)
