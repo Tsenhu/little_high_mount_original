@@ -102,8 +102,10 @@ def get_price_data(hist_earning):
     return daydream
 
 
-#any list of stock tickers make sense    
-ticker_list = read_query(engine, 'select distinct ticker from awesome.hist_er_elite')
+#any list of stock tickers make sense 
+parent_path = 'c:/Users/tsenh/github/awesome/'   
+initial_stock_list = pd.read_csv(parent_path + 'nasdaq.csv')
+ticker_list = initial_stock_list
 
 retry_list  = []
 
