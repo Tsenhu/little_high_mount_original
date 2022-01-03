@@ -61,12 +61,15 @@ def delete_action(engine, query):
 parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
 ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
+'''
+ticker_info  = read_query(engine, 
+                          'select a.ticker, a.date from( \
+                              select ticker, date, rank() over (partition by ticker order by date desc) as ranked from awesome.hist_er) as a\
+                            where a.ranked <=2\
+                            order by a.ticker, a.date')
 
 '''
-to do add yfinance.recommendations to company info [previous rating and post rating after last er date]
-only capture "buy", 'sell', 'neutral' ... need more details category for all stocks
 
-'''
 
 sector = []
 industry = []
