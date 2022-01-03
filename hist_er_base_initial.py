@@ -156,4 +156,6 @@ hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','eps
     
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
+daydream = daydream.dropna()
+
 daydream.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
