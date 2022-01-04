@@ -7,7 +7,8 @@ Created on Fri Dec 31 00:50:54 2021
 
 '''
 1. load initial tickers from excel
-2. 
+2. use pandas_datareader to load ER dates stock price and volume
+3. use yfinance to add insititution recommendations
 '''
 
 import pandas as pd
