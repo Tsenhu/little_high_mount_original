@@ -4,6 +4,12 @@ Created on Fri Dec 31 00:50:54 2021
 
 @author: tsenh
 """
+
+'''
+1. load initial tickers from excel
+2. 
+'''
+
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy
@@ -21,6 +27,7 @@ from dateutil.relativedelta import relativedelta
 import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
+import yfinance as yf
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -158,4 +165,73 @@ daydream = get_price_data(hist_er_final).drop_duplicates()
 
 daydream = daydream.dropna()
 
-daydream.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
+
+#daydream_ticker = daydream['ticker'].unique()
+daydream = read_query(engine, 'select * from awesome.hist_er')
+daydream_ticker = read_query(engine, 'select distinct ticker from awesome.hist_er')['ticker']
+
+
+#recommendation cnt
+def recommendation_cnt(ticker_list, hist_er):
+    daydream_final = pd.DataFrame()
+    tt = t.time()
+    for ticker in ticker_list:
+        t0 = t.time()
+        
+        temp_daydream = hist_er.loc[hist_er['ticker'] == ticker].reset_index()
+        temp_strong_buy = []
+        temp_buy = []
+        temp_hold = []
+        temp_sell = []
+        temp_strong_sell = []
+        temp_total_recommendations = []
+        try:
+            temp_recommendations = yf.Ticker(ticker).recommendations.reset_index()
+        
+        except:
+            temp_recommendations = pd.DataFrame()
+            
+        if len(temp_recommendations)>0:
+            for i in range(len(temp_daydream)):
+                if i == 0:
+                    temp_start_date = dt.datetime(2018,1,10)
+                else:
+                    temp_start_date = temp_daydream['date'][i-1]
+                    
+                temp_end_date = temp_daydream['date'][i]
+                
+                sliced_rec = temp_recommendations.loc[(temp_recommendations['Date']>= temp_start_date) &  (temp_recommendations['Date']<= temp_end_date)]
+                
+                temp_strong_buy.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Strong Buy']))
+                temp_buy.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Buy']))
+                temp_hold.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Hold']))
+                temp_sell.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Sell']))
+                temp_strong_sell.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Strong Sell']))
+                temp_total_recommendations.append(len(sliced_rec))
+            
+            print('Finish recommendation count for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
+            t.sleep(5)
+        else:
+            for i in range(len(temp_daydream)):
+                temp_strong_buy.append(np.nan)
+                temp_buy.append(np.nan)
+                temp_hold.append(np.nan)
+                temp_sell.append(np.nan)
+                temp_strong_sell.append(np.nan)
+                temp_total_recommendations.append(np.nan)
+                
+            print('Cannot match {0}'.format(ticker))
+            
+        recommendation_info = pd.DataFrame(list(zip(temp_strong_buy, temp_buy, temp_hold, temp_sell, temp_strong_sell, temp_total_recommendations)), 
+                                  columns = ['strong_buy_cnt', 'buy_cnt', 'hold_cnt', 'sell_cnt', 'strong_sell_cnt', 'total_recommendations'])
+            
+        temp_daydream_final = pd.concat([temp_daydream, recommendation_info], axis =1)
+        
+        daydream_final = pd.concat([daydream_final, temp_daydream_final], axis = 0)
+        
+        
+    print('All takes {0} seconds'.format(t.time()-tt))
+    return daydream_final
+
+daydream_final = recommendation_cnt(daydream_ticker, daydream)
+daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
