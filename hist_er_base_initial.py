@@ -235,4 +235,10 @@ def recommendation_cnt(ticker_list, hist_er):
     return daydream_final
 
 daydream_final = recommendation_cnt(daydream_ticker, daydream)
+
+daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
+
+if 'index' in daydream_final.columns:
+    daydream_final = daydream_final.drop(columns=['index'])
+    
 daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
