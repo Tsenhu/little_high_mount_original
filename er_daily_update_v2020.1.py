@@ -29,6 +29,8 @@ from dateutil.relativedelta import relativedelta
 import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
+import yfinance as yf
+
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -63,70 +65,42 @@ def delete_action(engine, query):
 
 #parent_path = 'c:/Users/tsenh/github/awesome/'
 
-'''
-UPDATE portfolio for option
-'''
-#temp_option_rd = pd.read_excel(parent_path + 'option_rd.xlsx')
-
-#temp_option_rd.to_sql(name='option_portfolio', con=engine, schema = 'awesome', if_exists='replace', index = False)
-
-
-
-for i in range(12):
     
-    date_from = dt.datetime(2019,1+i,1)
-    date_to = date_from + relativedelta(months=1) - dt.timedelta(1)
-    t0 = t.time()
-    temp_aa = pd.DataFrame(yec.earnings_between(date_from, date_to))
-    hist_er = pd.concat([hist_er,temp_aa])
-    print(str(date_from) + '  data used ' + str(t.time() - t0) + ' seconds')
-    t.sleep(10)
-    
-    
-
-hist_earning =  hist_er[['ticker','startdatetime', 'epsestimate','epsactual','epssurprisepct']].dropna().sort_values(by = ['ticker', 'startdatetime']).reset_index()
-
 last_db_date = read_query(engine, 'select max(date) as date from awesome.hist_er').iloc[0]['date']
 #last_db_date = dt.date(2019,1,1)
 
 def get_earning_data(date_from = (last_db_date + dt.timedelta(1)), date_to = (datetime.now().date()-dt.timedelta(5))):
     
-    hist_er = pd.DataFrame()
+    temp_hist_er = pd.DataFrame()
     
     t0 = t.time()
-    temp_date_from = date_from
     
-    for i in range((date_to - date_from).days + 1):
+    temp_name = ['temp_'+ str(name) for name in range(12)]
+
+    container = {}
+
+    for i in range(len(temp_name)):
         
-        temp_date_from = date_from + dt.timedelta(i)
-        print(temp_date_from)
-        try:
-            temp_hist_er = pd.DataFrame(yec.earnings_between(temp_date_from, temp_date_from))
-            print(1)           
-        except:
-            try:
-                temp_hist_er = pd.DataFrame(yec.earnings_between(temp_date_from, temp_date_from))
-                print(2)
-            except:
-                try:
-                    temp_hist_er = pd.DataFrame(yec.earnings_between(temp_date_from, temp_date_from))
-                    print(3)
-                except:
-                    temp_hist_er = pd.DataFrame()
-                    print(4)
-        if len(temp_hist_er) > 0:
+        container[temp_name[i]] = si.get_earnings_in_date_range(date_from, date_to)
+        t.sleep(3)
             
-            temp_hist_er['date'] = temp_date_from
-            
-            hist_er = pd.concat([hist_er, temp_hist_er])
-            
+    if len(container)>0:
         
+        length_cnt = [len(container[name_key]) for name_key in container]
+        
+        temp_hist_er = pd.DataFrame(container['temp_'+ str(length_cnt.index(max(length_cnt)))])
+    
+        
+        
+        
+        temp_hist_er.insert(1, 'date', temp_hist_er['startdatetime'].str.split('T').str[0])
+        temp_hist_er['date'] = pd.to_datetime(temp_hist_er['date'])
+        temp_hist_er = temp_hist_er[['ticker', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by = ['ticker', 'date']).reset_index(drop=True)
+        
+        temp_hist_er = temp_hist_er.dropna()
     print('Grab earning report data from {0} to {1}, used {2} seconds.'.format(str(date_from), date_to,  str(t.time() - t0)))
     
-    return hist_er
-
-if ((datetime.now().date()-dt.timedelta(5)) - (last_db_date + dt.timedelta(1))).days >= 0:
-    hist_earning = get_earning_data()[['ticker','date', 'epsestimate','epsactual','epssurprisepct']].dropna().sort_values(by = ['ticker', 'date']).reset_index()
+    return temp_hist_er
 
 
 
@@ -166,21 +140,101 @@ def get_price_data(hist_earning):
             nextday_close_price.append(np.nan)
             nextday_volume.append(np.nan)
             
-        print('{0} takes {1} seconds'.format(symbol + ' ' + str(start_date), t.time()-t0))
+        print('Get price of {0} takes {1} seconds'.format(symbol + ' ' + str(start_date), t.time()-t0))
         
-    print('All takes {0} seconds'.format(t.time()-tt))
+    print('Get price of all takes {0} seconds'.format(t.time()-tt))
     
     price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume)), 
                           columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume'])
     
-    daydream = pd.concat([hist_earning, price_info], axis =1).drop(columns = ['index'])
+    daydream = pd.concat([hist_earning, price_info], axis =1)
     
 
     return daydream
-    
-daydream = get_price_data(hist_earning).drop_duplicates()
 
-daydream.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
+#different version compare to hist_er_base_initial.py
+def recommendation_cnt(ticker_list, hist_er):
+    daydream_final = pd.DataFrame()
+    tt = t.time()
+    for ticker in ticker_list:
+        t0 = t.time()
+        
+        temp_daydream = hist_er.loc[hist_er['ticker'] == ticker].reset_index()
+        temp_strong_buy = []
+        temp_buy = []
+        temp_hold = []
+        temp_sell = []
+        temp_strong_sell = []
+        temp_total_recommendations = []
+        try:
+            temp_recommendations = yf.Ticker(ticker).recommendations.reset_index()
+        
+        except:
+            temp_recommendations = pd.DataFrame()
+            
+        if len(temp_recommendations)>0:
+            
+            temp_start_date = read_query(engine, "select date from awesome.hist_er where ticker = '" + ticker +"' order by date desc limit 1")['date']
+            
+            if len(temp_start_date):
+                
+                temp_start_date = temp_start_date[0]
+            
+            else:
+                
+                temp_start_date = dt.datetime(2018,1,10)
+            
+                    
+            temp_end_date = datetime.combine(temp_daydream['date'][0].date(), datetime.min.time())
+            
+            sliced_rec = temp_recommendations.loc[(temp_recommendations['Date']>= temp_start_date) &  (temp_recommendations['Date']<= temp_end_date)]
+            
+            temp_strong_buy.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Strong Buy']))
+            temp_buy.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Buy']))
+            temp_hold.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Hold']))
+            temp_sell.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Sell']))
+            temp_strong_sell.append(len(sliced_rec.loc[sliced_rec['To Grade'] == 'Strong Sell']))
+            temp_total_recommendations.append(len(sliced_rec))
+            
+            print('Finish recommendation count for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
+            t.sleep(5)
+        else:
+            for i in range(len(temp_daydream)):
+                temp_strong_buy.append(np.nan)
+                temp_buy.append(np.nan)
+                temp_hold.append(np.nan)
+                temp_sell.append(np.nan)
+                temp_strong_sell.append(np.nan)
+                temp_total_recommendations.append(np.nan)
+                
+            print('Cannot match {0}'.format(ticker))
+            
+        recommendation_info = pd.DataFrame(list(zip(temp_strong_buy, temp_buy, temp_hold, temp_sell, temp_strong_sell, temp_total_recommendations)), 
+                                  columns = ['strong_buy_cnt', 'buy_cnt', 'hold_cnt', 'sell_cnt', 'strong_sell_cnt', 'total_recommendations'])
+            
+        temp_daydream_final = pd.concat([temp_daydream, recommendation_info], axis =1)
+        
+        daydream_final = pd.concat([daydream_final, temp_daydream_final], axis = 0)
+        
+        
+    print('All takes {0} seconds'.format(t.time()-tt))
+    return daydream_final
+
+#grab new er stock base info for the certain range
+if ((datetime.now().date()-dt.timedelta(5)) - (last_db_date + dt.timedelta(1)).date()).days >= 0:
+    hist_earning = get_earning_data().drop_duplicates().reset_index(drop=True)
+else:
+    hist_earning = pd.DataFrame()
+
+if len(hist_earning)>0:
+    
+    daydream = get_price_data(hist_earning)
+    
+    daydream_final = recommendation_cnt(daydream['ticker'], daydream)
+    
+    daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
+
+daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
 
 #prepare for elite table
 new_daydream = read_query(engine, 'select * from awesome.hist_er')
@@ -219,3 +273,11 @@ elite_ticker['er_date'] = date
 
 temp_elite_ticker = elite_ticker[elite_ticker['er_date']> datetime.now().date()]
 temp_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
+
+
+
+
+'''
+
+'''
+
