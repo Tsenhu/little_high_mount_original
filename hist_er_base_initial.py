@@ -234,7 +234,8 @@ def recommendation_cnt(ticker_list, hist_er):
     print('All takes {0} seconds'.format(t.time()-tt))
     return daydream_final
 
-daydream_final = recommendation_cnt(daydream_ticker, daydream)
+#daydream_final = recommendation_cnt(daydream_ticker, daydream)
+daydream_final = daydream
 
 daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
 
