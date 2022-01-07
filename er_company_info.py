@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 import sqlalchemy
 import datetime as dt
 from datetime import datetime, timedelta
-#import talib as ta
+import urllib.request
 import numpy as np
 import os, os.path 
 #import tensorflow as tf
@@ -57,18 +57,30 @@ def delete_action(engine, query):
         con.close()
         
         print('delete table action finish')
+        
+
+def zacks_rank(Symbol):
+ 
+    # Wait for 2 seconds
+    #time.sleep(2)
+    url = 'https://quote-feed.zacks.com/index?t='+Symbol
+    downloaded_data  = urllib.request.urlopen(url)
+    data = downloaded_data.read()
+    data_str = data.decode()
+    Z_Rank =["Strong Buy","Buy","Hold","Sell","Strong Sell"]
+
+    for Rank in Z_Rank:
+       #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
+       # peyda kon ;; faghat index harf aval ro retrun mikond
+       if(data_str.find(Rank) != -1):
+           return Rank #data_str[res:res+len(Rank)]#
 
 parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
-ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
-'''
-ticker_info  = read_query(engine, 
-                          'select a.ticker, a.date from( \
-                              select ticker, date, rank() over (partition by ticker order by date desc) as ranked from awesome.hist_er) as a\
-                            where a.ranked <=2\
-                            order by a.ticker, a.date')
+#ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
+ticker = pd.read_csv(parent_path + 'nasdaq01072022.csv')
 
-'''
+ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == 'Y') & (ticker['ETF'] == 'N')].reset_index(drop=True)
 
 
 sector = []
@@ -77,10 +89,11 @@ country = []
 state = []
 city = []
 company_name = []
+zack_rank = []
 tt = t.time()
-for i in range(len(ticker)):
+for i in range(len(ticker_target)):
     t0 =  t.time()
-    t_ticker = yf.Ticker(ticker['ticker'][i])
+    t_ticker = yf.Ticker(ticker_target['Symbol'][i])
     try:
         sector.append(t_ticker.info['sector'])
     except:
@@ -105,18 +118,23 @@ for i in range(len(ticker)):
         company_name.append(t_ticker.info['longName'])
     except:  
         company_name.append(np.nan)
-    print('{0} takes {1} seconds'.format(ticker['ticker'][i] , t.time()-t0))
+    try:
+        zack_rank.append(zacks_rank(ticker_target['Symbol'][i]))
+    except:
+        zack_rank.append(np.nan)
+    print('{0} takes {1} seconds'.format(ticker_target['Symbol'][i] , t.time()-t0))
     t.sleep(1)
 print('All takes {0} seconds'.format(t.time()-tt))
 
-ticker['sector'] = sector
-ticker['industry'] = industry
-ticker['country'] = country
-ticker['state'] = state
-ticker['city'] = city
-ticker['company_name'] = company_name
+ticker_target['sector'] = sector
+ticker_target['industry'] = industry
+ticker_target['country'] = country
+ticker_target['state'] = state
+ticker_target['city'] = city
+ticker_target['company_name'] = company_name
+ticker_target['zacks_rank'] = zack_rank
 
-ticker1= ticker.replace(np.nan, '', regex=True)
+ticker1= ticker_target.replace(np.nan, '', regex=True)
 
 
 
