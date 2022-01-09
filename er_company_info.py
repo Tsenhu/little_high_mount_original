@@ -5,6 +5,11 @@ Created on Tue Aug  4 20:42:45 2020
 @author: tsenh
 """
 
+"""
+To Do list
+
+It takes 20h to finish the process. Need to split the process into 2 or 3 process by companies
+"""
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy
