@@ -72,7 +72,7 @@ def zacks_rank(Symbol):
     downloaded_data  = urllib.request.urlopen(url)
     data = downloaded_data.read()
     data_str = data.decode()
-    Z_Rank =["Strong Buy","Buy","Hold","Sell","Strong Sell"]
+    Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
 
     for Rank in Z_Rank:
        #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
