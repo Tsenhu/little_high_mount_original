@@ -30,7 +30,7 @@ import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
 import yfinance as yf
-
+import urllib.request
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -82,6 +82,7 @@ def get_earning_data(date_from = (last_db_date + dt.timedelta(1)), date_to = (da
     for i in range(len(temp_name)):
         
         container[temp_name[i]] = si.get_earnings_in_date_range(date_from, date_to)
+        print('{0} times approach to get earning data'.format(str(i)))
         t.sleep(3)
             
     if len(container)>0:
@@ -98,11 +99,25 @@ def get_earning_data(date_from = (last_db_date + dt.timedelta(1)), date_to = (da
         temp_hist_er = temp_hist_er[['ticker', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by = ['ticker', 'date']).reset_index(drop=True)
         
         temp_hist_er = temp_hist_er.dropna()
-    print('Grab earning report data from {0} to {1}, used {2} seconds.'.format(str(date_from), date_to,  str(t.time() - t0)))
+    print('Grab earning report data from {0} to {1}, used {2} seconds.'.format(str(date_from), str(date_to),  str(t.time() - t0)))
     
     return temp_hist_er
 
+def zacks_rank(Symbol):
+ 
+    # Wait for 2 seconds
+    #time.sleep(2)
+    url = 'https://quote-feed.zacks.com/index?t='+Symbol
+    downloaded_data  = urllib.request.urlopen(url)
+    data = downloaded_data.read()
+    data_str = data.decode()
+    Z_Rank =["Strong Buy","Buy","Hold","Sell","Strong Sell"]
 
+    for Rank in Z_Rank:
+       #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
+       # peyda kon ;; faghat index harf aval ro retrun mikond
+       if(data_str.find(Rank) != -1):
+           return Rank #data_str[res:res+len(Rank)]#
 
 
 def get_price_data(hist_earning):
@@ -111,6 +126,7 @@ def get_price_data(hist_earning):
     nextday_close_price = []
     current_volume = []
     nextday_volume = []
+    zack_rank = []
     
     tt = t.time()
     for i in range(len(hist_earning)):
@@ -139,20 +155,23 @@ def get_price_data(hist_earning):
             current_volume.append(np.nan)
             nextday_close_price.append(np.nan)
             nextday_volume.append(np.nan)
-            
+        zack_rank.append(zacks_rank(symbol))    
         print('Get price of {0} takes {1} seconds'.format(symbol + ' ' + str(start_date), t.time()-t0))
         
     print('Get price of all takes {0} seconds'.format(t.time()-tt))
     
-    price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume)), 
-                          columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume'])
+    price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume, zack_rank)), 
+                          columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume', 'zacks_rank'])
     
     daydream = pd.concat([hist_earning, price_info], axis =1)
     
 
     return daydream
 
+
+
 #different version compare to hist_er_base_initial.py
+'''
 def recommendation_cnt(ticker_list, hist_er):
     daydream_final = pd.DataFrame()
     tt = t.time()
@@ -219,7 +238,7 @@ def recommendation_cnt(ticker_list, hist_er):
         
     print('All takes {0} seconds'.format(t.time()-tt))
     return daydream_final
-
+'''
 #grab new er stock base info for the certain range
 if ((datetime.now().date()-dt.timedelta(5)) - (last_db_date + dt.timedelta(1)).date()).days >= 0:
     hist_earning = get_earning_data().drop_duplicates().reset_index(drop=True)
@@ -230,9 +249,11 @@ if len(hist_earning)>0:
     
     daydream = get_price_data(hist_earning)
     
-    daydream_final = recommendation_cnt(daydream['ticker'], daydream)
+    daydream['etl_date'] = pd.to_datetime(datetime.now().date())
     
-    daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
+    daydream_final = daydream[['ticker', 'date', 'epsestimate', 'epsactual', 'epssurprisepct',
+           'current_close_price', 'nextday_close_price', 'current_volume',
+           'nextday_volume', 'etl_date', 'zacks_rank']]
 
 daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
 
@@ -250,34 +271,6 @@ daydream_elite = new_daydream[new_daydream['ticker'].isin(volume_detect_elite['t
 daydream_elite.to_sql(name='hist_er_elite', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
 
-'''
-next earning date
-'''
-elite_ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er_elite')
-
-date = []
-
-tt = t.time()
-for i in range(len(elite_ticker)):
-    t0 =  t.time()
-    try:
-        date.append(dt.datetime.utcfromtimestamp(yec.get_next_earnings_date(elite_ticker['ticker'][i])).date())
-
-    except:
-        date.append(np.nan)
-
-    print('{0} takes {1} seconds'.format(elite_ticker['ticker'][i] , t.time()-t0))
-print('All takes {0} seconds'.format(t.time()-tt))
-
-elite_ticker['er_date'] = date
-
-temp_elite_ticker = elite_ticker[elite_ticker['er_date']> datetime.now().date()]
-temp_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
 
-
-
-'''
-
-'''
 
