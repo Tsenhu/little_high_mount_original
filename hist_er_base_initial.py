@@ -11,6 +11,12 @@ Created on Fri Dec 31 00:50:54 2021
 3. use yfinance to add insititution recommendations
 '''
 
+'''
+To Do List
+
+It takes more than 40h to finish the process.  Need to split the process into 2 or 3 process by companies. 
+'''
+
 import pandas as pd
 from sqlalchemy import create_engine
 import sqlalchemy
@@ -112,8 +118,9 @@ def get_price_data(hist_earning):
 
 #any list of stock tickers make sense 
 parent_path = 'c:/Users/tsenh/github/awesome/'   
-initial_stock_list = pd.read_csv(parent_path + 'nasdaq.csv')
-ticker_list = initial_stock_list
+#initial_stock_list = pd.read_csv(parent_path + 'nasdaq.csv')
+ticker_list  = read_query(engine, "select symbol as ticker, zacks_rank from awesome.company_info where zacks_rank != ''")
+#ticker_list = initial_stock_list
 
 retry_list  = []
 
@@ -135,7 +142,7 @@ for ticker in ticker_list['ticker']:
     if len(temp_final)>0:
         
         hist_er = pd.concat([hist_er, temp_final])
-        t.sleep(12)
+        t.sleep(5)
 #could run multiple time        
 for ticker in retry_list:
     
@@ -165,12 +172,6 @@ hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','eps
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
 daydream = daydream.dropna()
-
-
-#daydream_ticker = daydream['ticker'].unique()
-daydream = read_query(engine, 'select * from awesome.hist_er')
-daydream_ticker = read_query(engine, 'select distinct ticker from awesome.hist_er')['ticker']
-
 
 #recommendation cnt
 def recommendation_cnt(ticker_list, hist_er):
@@ -237,9 +238,13 @@ def recommendation_cnt(ticker_list, hist_er):
 #daydream_final = recommendation_cnt(daydream_ticker, daydream)
 daydream_final = daydream
 
+daydream_final = pd.merge(daydream_final, ticker_list, on='ticker')
+
 daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
 
 if 'index' in daydream_final.columns:
     daydream_final = daydream_final.drop(columns=['index'])
+    
+
     
 daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
