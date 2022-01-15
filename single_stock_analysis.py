@@ -60,14 +60,14 @@ def delete_action(engine, query):
         print('delete table action finish')
 
 
-def get_stock_data(ticker):
+def get_stock_data(ticker, start_year = 2019):
     
-    return si.get_data(ticker, '2019/1/1', datetime.now().date()).reset_index().rename(columns={'index':'date'})
+    return si.get_data(ticker, str(start_year) + '/1/1', datetime.now().date()).reset_index().rename(columns={'index':'date'})
 
 
-def plot_stock(symbol, save_image = 'Y'):
+def plot_stock(symbol, save_image = 'Y', start_year = 2019):
     
-    data = get_stock_data(symbol)
+    data = get_stock_data(symbol, start_year)
     
     earnings = read_query(engine, "select * from awesome.hist_er where ticker = '" + symbol + "' order by date")
     
