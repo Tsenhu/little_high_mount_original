@@ -75,6 +75,7 @@ def zacks_rank(Symbol):
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 90 day)> sysdate()')
 
+prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
 date = []
 zack_rank = []
 zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
@@ -100,5 +101,7 @@ ticker['zack_rank'] = zack_rank
 
 
 temp_elite_ticker = ticker[ticker['er_date']> datetime.now().date()]
-temp_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
+
+cur_elite_ticker  = pd.merge(temp_elite_ticker, prev_next_er, how = 'left', on ='ticker')
+cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
