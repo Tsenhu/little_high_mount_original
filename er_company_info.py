@@ -137,7 +137,7 @@ ticker_target['country'] = country
 ticker_target['state'] = state
 ticker_target['city'] = city
 ticker_target['company_name'] = company_name
-ticker_target['zacks_rank'] = zack_rank
+ticker_target['zack_rank'] = zack_rank
 
 ticker1= ticker_target.replace(np.nan, '', regex=True)
 
