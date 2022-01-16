@@ -119,7 +119,7 @@ def get_price_data(hist_earning):
 #any list of stock tickers make sense 
 parent_path = 'c:/Users/tsenh/github/awesome/'   
 #initial_stock_list = pd.read_csv(parent_path + 'nasdaq.csv')
-ticker_list  = read_query(engine, "select symbol as ticker, zacks_rank from awesome.company_info where zacks_rank != ''")
+ticker_list  = read_query(engine, "select symbol as ticker, zack_rank from awesome.company_info where zack_rank != ''")
 #ticker_list = initial_stock_list
 
 retry_list  = []
