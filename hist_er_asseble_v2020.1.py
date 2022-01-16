@@ -112,12 +112,12 @@ def zacks_rank(Symbol):
     data = downloaded_data.read()
     data_str = data.decode()
     Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
-
+    zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
     for Rank in Z_Rank:
        #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
        # peyda kon ;; faghat index harf aval ro retrun mikond
        if(data_str.find(Rank) != -1):
-           return Rank #data_str[res:res+len(Rank)]#
+           return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
 
 def get_price_data(hist_earning):
