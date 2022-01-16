@@ -66,19 +66,19 @@ def zacks_rank(Symbol):
     data = downloaded_data.read()
     data_str = data.decode()
     Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
-
+    zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
     for Rank in Z_Rank:
        #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
        # peyda kon ;; faghat index harf aval ro retrun mikond
        if(data_str.find(Rank) != -1):
-           return Rank #data_str[res:res+len(Rank)]#
+           return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 90 day)> sysdate()')
 
 prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
 date = []
 zack_rank = []
-zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
+
 
 tt = t.time()
 for i in range(len(ticker)):
