@@ -1,10 +1,3 @@
-select ne.ticker, ne.er_date, ne.zack_rank, hist.*
-from next_er_date  ne
-inner join hist_er hist on hist.ticker = ne.ticker
-where ne.zack_rank like 'Strong%';
-
-
-
 SELECT * FROM awesome.hist_er_elite;
 #trend accurate percent
 select aa.ticker, sum(aa.same_direction)/count(*) as direction_correct
@@ -41,13 +34,13 @@ from awesome.hist_er_elite
 group by ticker) avg_change on avg_change.ticker = elite.ticker
 left join awesome.next_er_date temp on temp.ticker = elite.ticker
 where temp.er_date is not null and avg_change.avg_change >= 0.1
-and temp.zack_rank like 'Strong%'
+and temp.zack_rank in (1, 5)
 order by temp.er_date, elite.ticker, elite.date;
 
 
 #lite version
-select distinct ticker, er_date, zack_rank, accurate_pct, avg_change from (
-select elite.*, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank
+select distinct ticker, er_date, zack_rank, accurate_pct, avg_change, sector from (
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, com.sector
 from awesome.hist_er_elite elite
 left join (
 select aa.ticker, sum(aa.same_direction)/count(*) as accurate_pct
@@ -66,11 +59,26 @@ select ticker, avg(abs(price_change)) as avg_change
 from awesome.hist_er_elite
 group by ticker) avg_change on avg_change.ticker = elite.ticker
 left join awesome.next_er_date temp on temp.ticker = elite.ticker
+left join awesome.company_info com on com.Symbol = elite.ticker
 where temp.er_date is not null and avg_change.avg_change >= 0.1
-and temp.zack_rank like 'Strong%'
+and temp.zack_rank in (1, 5)
 order by temp.er_date, elite.ticker, elite.date
-) as a;
+) as a order by er_date;
 
+
+#zack rank er return tracking
+select sector, avg(increase_pct), min(increase_pct), max(increase_pct), count(*)from (
+select aa.*, (aa.nextday_close_price-aa.current_close_price)/aa.current_close_price as increase_pct, com.sector,
+case when  (aa.nextday_close_price-aa.current_close_price)/aa.current_close_price> 0.05 then 1
+	 when  (aa.nextday_close_price-aa.current_close_price)/aa.current_close_price> 0 then 0.5
+     else -1 end as current_rank from
+(
+select *,  rank() over (partition by ticker order by date desc) as date_order 
+from awesome.hist_er_elite
+) aa
+left join awesome.company_info com on com.Symbol = aa.ticker
+where aa.date_order = 1 and aa.zacks_rank like 'Strong%') bb group by sector
+;
 
 
 
