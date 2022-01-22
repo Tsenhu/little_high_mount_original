@@ -3,6 +3,8 @@
 Created on Thu Jan  6 14:52:44 2022
 
 @author: tsenh
+
+notes update weekly
 """
 
 import urllib.request
