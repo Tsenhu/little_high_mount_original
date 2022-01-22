@@ -75,7 +75,7 @@ def zacks_rank(Symbol):
        if(data_str.find(Rank) != -1):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
-ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 90 day)> sysdate()')
+ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 120 day)> sysdate()')
 
 prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
 date = []
