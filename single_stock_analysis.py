@@ -98,7 +98,7 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019):
     for i in range(len(earnings)):
         earning_info.append([earnings['date'][i].date(), 
                              earnings['current_close_price'][i], 
-                             earnings['earning_quarter'][i] + ' ' + str(earnings['zacks_rank'][i]) + ' increase' + \
+                             earnings['earning_quarter'][i] + ' ' + str(earnings['zack_rank'][i]) + ' increase' + \
                             str(round((earnings['nextday_close_price'][i]-earnings['current_close_price'][i])/earnings['current_close_price'][i], 4))]
                             )
    
