@@ -96,6 +96,7 @@ for i in range(len(ticker)):
     except:
         zack_rank.append('')
         print('{0} has no zack info'.format(ticker['ticker'][i]))
+    t.sleep(1)
 print('All takes {0} seconds'.format(t.time()-tt))
 
 ticker['er_date'] = date
