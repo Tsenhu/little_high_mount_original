@@ -25,7 +25,8 @@ from dateutil.relativedelta import relativedelta
 import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
-
+import yfinance as yf
+import csv
 
 
 t_ini = t.time()
@@ -74,37 +75,51 @@ def zacks_rank(Symbol):
        # peyda kon ;; faghat index harf aval ro retrun mikond
        if(data_str.find(Rank) != -1):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
+       
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 120 day)> sysdate()')
 
 prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
-date = []
+
+
 zack_rank = []
 
 
 tt = t.time()
 for i in range(len(ticker)):
     t0 =  t.time()
-    try:
-        date.append(si.get_next_earnings_date(ticker['ticker'][i]).date())
-    except:
-        date.append(np.nan)
-        print('{0} cannot make it'.format(ticker['ticker'][i]))
+
     try:
         zack_rank.append(zacks_rank(ticker['ticker'][i]))
         print('{0} takes {1} seconds'.format(ticker['ticker'][i] , t.time()-t0))
     except:
         zack_rank.append('')
         print('{0} has no zack info'.format(ticker['ticker'][i]))
-    t.sleep(1)
+ 
 print('All takes {0} seconds'.format(t.time()-tt))
 
-ticker['er_date'] = date
+
 ticker['zack_rank'] = zack_rank
+#er date
+CSV_URL = 'https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=DHXUWE4M05O9WHWW'
+
+with requests.Session() as s:
+    download = s.get(CSV_URL)
+    decoded_content = download.content.decode('utf-8')
+    cr = csv.reader(decoded_content.splitlines(), delimiter=',')
+    my_list = list(cr)
+    
+er_date = pd.DataFrame(my_list[1:])
+er_date = er_date.rename(columns={0:'ticker', 1:'company name', 2:'er_date', 3:'fiscalDateEnding', 4:'estimate', 5:'currency'})
+
+er_date_dedu = er_date[['ticker','er_date']].groupby('ticker').first().reset_index()
+
+ticker_merge = pd.merge(ticker, er_date_dedu, how = 'inner', left_on='ticker', right_on='ticker')
+ticker_merge['er_date'] = pd.to_datetime(ticker_merge['er_date'])
+#select useful ticker info
 
 
-temp_elite_ticker = ticker[ticker['er_date']> datetime.now().date()]
-
-cur_elite_ticker  = pd.merge(temp_elite_ticker, prev_next_er, how = 'left', on ='ticker')
+cur_elite_ticker  = pd.merge(ticker_merge, prev_next_er, how = 'left', on ='ticker')
+cur_elite_ticker = cur_elite_ticker[['ticker', 'er_date', 'zack_rank', 'prev_zack_rank']]
 cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
