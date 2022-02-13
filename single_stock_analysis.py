@@ -85,7 +85,7 @@ def zacks_rank(Symbol):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
 
-def plot_stock(symbol, save_image = 'Y', start_year = 2019):
+def plot_stock(symbol, save_image = 'Y', start_year = 2019, save_path = save_path):
     
     data = get_stock_data(symbol, start_year)
     
@@ -181,36 +181,3 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019):
        fig.savefig(save_path+symbol + '_' +str(datetime.now().date()) + '_result_visualization.pdf')
      
 
-text = '\
-select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, sector from ( \
-select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, com.sector \
-from awesome.hist_er_elite elite \
-left join ( \
-select aa.ticker, sum(aa.same_direction)/count(*) as accurate_pct \
-from ( \
-select ticker, \
-case \
-when epssurprisepct < 0 and price_change >0 then 0 \
-when epssurprisepct > 0 and price_change <0 then 0 \
-else 1 end as same_direction \
-from awesome.hist_er_elite \
-) aa \
-group by aa.ticker \
-) trend on trend.ticker = elite.ticker \
-left join (  \
-select ticker, avg(abs(price_change)) as avg_change \
-from awesome.hist_er_elite  \
-group by ticker) avg_change on avg_change.ticker = elite.ticker \
-left join awesome.next_er_date temp on temp.ticker = elite.ticker \
-left join awesome.company_info com on com.Symbol = elite.ticker \
-where temp.er_date is not null and avg_change.avg_change >= 0.1 \
-and temp.zack_rank in (1, 5) and temp.prev_zack_rank -temp.zack_rank <=1 \
-order by temp.er_date, elite.ticker, elite.date \
-) as a order by er_date \
-' 
-df = read_query(engine, text)
-
-
-
-for i in range(len(df)):
-    plot_stock(df['ticker'][i])
