@@ -27,6 +27,7 @@ import urllib.request
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import matplotlib.ticker as ticker
+import pathlib
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -34,7 +35,10 @@ _db = 'awesome'
 _user = 'root'
 _password = 'Albert@25'
 engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
-path = 'c:/Users/tsenh/github/extra_files/'
+save_path = 'C:/Users/tsenh/GitHub/extra_files/weekly_screen_' + str(datetime.now().date()) +'/'
+
+path = pathlib.Path(save_path)
+path.mkdir(parents=True, exist_ok = True)
 
 def read_query(engine, query):
         con = engine.connect()
@@ -63,6 +67,22 @@ def delete_action(engine, query):
 def get_stock_data(ticker, start_year = 2019):
     
     return si.get_data(ticker, str(start_year) + '/1/1', datetime.now().date()).reset_index().rename(columns={'index':'date'})
+
+def zacks_rank(Symbol):
+ 
+    # Wait for 2 seconds
+    #time.sleep(2)
+    url = 'https://quote-feed.zacks.com/index?t='+Symbol
+    downloaded_data  = urllib.request.urlopen(url)
+    data = downloaded_data.read()
+    data_str = data.decode()
+    Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
+    zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
+    for Rank in Z_Rank:
+       #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
+       # peyda kon ;; faghat index harf aval ro retrun mikond
+       if(data_str.find(Rank) != -1):
+           return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
 
 def plot_stock(symbol, save_image = 'Y', start_year = 2019):
@@ -116,7 +136,7 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019):
 
     ax1.legend(lns, labs, loc='upper left')
     ax1.set_xlabel('date')
-    ax1.set(ylabel = 'close price', title = symbol + ' price&volume trend')
+    ax1.set(ylabel = 'close price', title = symbol + ' price&volume trend. Zacks rank: ' + str(zacks_rank(symbol)))
     ax2.set_ylabel('volume')
     
     ax1.xaxis.set_major_locator(mdates.YearLocator())
@@ -158,6 +178,39 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019):
     
     plt.show()
     if save_image == 'Y':  
-       fig.savefig(path+symbol + '_' +str(datetime.now().date()) + '_result_visualization.pdf')
+       fig.savefig(save_path+symbol + '_' +str(datetime.now().date()) + '_result_visualization.pdf')
      
 
+text = '\
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, sector from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, com.sector \
+from awesome.hist_er_elite elite \
+left join ( \
+select aa.ticker, sum(aa.same_direction)/count(*) as accurate_pct \
+from ( \
+select ticker, \
+case \
+when epssurprisepct < 0 and price_change >0 then 0 \
+when epssurprisepct > 0 and price_change <0 then 0 \
+else 1 end as same_direction \
+from awesome.hist_er_elite \
+) aa \
+group by aa.ticker \
+) trend on trend.ticker = elite.ticker \
+left join (  \
+select ticker, avg(abs(price_change)) as avg_change \
+from awesome.hist_er_elite  \
+group by ticker) avg_change on avg_change.ticker = elite.ticker \
+left join awesome.next_er_date temp on temp.ticker = elite.ticker \
+left join awesome.company_info com on com.Symbol = elite.ticker \
+where temp.er_date is not null and avg_change.avg_change >= 0.1 \
+and temp.zack_rank in (1, 5) and temp.prev_zack_rank -temp.zack_rank <=1 \
+order by temp.er_date, elite.ticker, elite.date \
+) as a order by er_date \
+' 
+df = read_query(engine, text)
+
+
+
+for i in range(len(df)):
+    plot_stock(df['ticker'][i])
