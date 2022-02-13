@@ -27,6 +27,7 @@ from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import csv
+from single_stock_analysis import plot_stock
 
 
 t_ini = t.time()
@@ -35,7 +36,7 @@ _db = 'awesome'
 _user = 'root'
 _password = 'Albert@25'
 engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
-
+save_path = 'C:/Users/tsenh/GitHub/extra_files/weekly_screen_' + str(datetime.now().date()) +'/'
 
 def read_query(engine, query):
         con = engine.connect()
@@ -123,3 +124,37 @@ cur_elite_ticker  = pd.merge(ticker_merge, prev_next_er, how = 'left', on ='tick
 cur_elite_ticker = cur_elite_ticker[['ticker', 'er_date', 'zack_rank', 'prev_zack_rank']]
 cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
+
+text = '\
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, sector from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, com.sector \
+from awesome.hist_er_elite elite \
+left join ( \
+select aa.ticker, sum(aa.same_direction)/count(*) as accurate_pct \
+from ( \
+select ticker, \
+case \
+when epssurprisepct < 0 and price_change >0 then 0 \
+when epssurprisepct > 0 and price_change <0 then 0 \
+else 1 end as same_direction \
+from awesome.hist_er_elite \
+) aa \
+group by aa.ticker \
+) trend on trend.ticker = elite.ticker \
+left join (  \
+select ticker, avg(abs(price_change)) as avg_change \
+from awesome.hist_er_elite  \
+group by ticker) avg_change on avg_change.ticker = elite.ticker \
+left join awesome.next_er_date temp on temp.ticker = elite.ticker \
+left join awesome.company_info com on com.Symbol = elite.ticker \
+where temp.er_date is not null and avg_change.avg_change >= 0.1 \
+and temp.zack_rank in (1, 5) and temp.prev_zack_rank -temp.zack_rank <=1 \
+order by temp.er_date, elite.ticker, elite.date \
+) as a order by er_date \
+' 
+df = read_query(engine, text)
+
+
+
+for i in range(len(df)):
+    plot_stock(df['ticker'][i])
