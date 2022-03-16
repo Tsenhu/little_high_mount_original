@@ -79,6 +79,8 @@ def zacks_rank(Symbol):
        
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 120 day)> sysdate()')
+#zack records backup
+elite_ticker_list = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite')
 
 prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
 
@@ -87,20 +89,25 @@ zack_rank = []
 
 
 tt = t.time()
-for i in range(len(ticker)):
+for i in range(len(elite_ticker_list)):
     t0 =  t.time()
 
     try:
-        zack_rank.append(zacks_rank(ticker['ticker'][i]))
-        print('{0} takes {1} seconds'.format(ticker['ticker'][i] , t.time()-t0))
+        zack_rank.append(zacks_rank(elite_ticker_list['ticker'][i]))
+        print('{0} takes {1} seconds'.format(elite_ticker_list['ticker'][i] , t.time()-t0))
     except:
         zack_rank.append('')
-        print('{0} has no zack info'.format(ticker['ticker'][i]))
+        print('{0} has no zack info'.format(elite_ticker_list['ticker'][i]))
  
 print('All takes {0} seconds'.format(t.time()-tt))
 
+ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank})
+ticker_zack_hist['update_date'] = triggering_date = dt.datetime.now().date()
+ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
-ticker['zack_rank'] = zack_rank
+
+ticker = pd.merge(ticker, ticker_zack_hist[['ticker', 'zack_rank']], how='left', on='ticker')
+
 #er date
 CSV_URL = 'https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=DHXUWE4M05O9WHWW'
 
