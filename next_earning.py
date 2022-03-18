@@ -86,23 +86,35 @@ prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank fr
 
 
 zack_rank = []
-
+institutional_holder = []
 
 tt = t.time()
 for i in range(len(elite_ticker_list)):
     t0 =  t.time()
-
+    
+    if i%5==0:
+        t.sleep(5)
     try:
         zack_rank.append(zacks_rank(elite_ticker_list['ticker'][i]))
-        print('{0} takes {1} seconds'.format(elite_ticker_list['ticker'][i] , t.time()-t0))
+        print('{0} takes {1} seconds for zack info'.format(elite_ticker_list['ticker'][i] , t.time()-t0))
     except:
         zack_rank.append('')
         print('{0} has no zack info'.format(elite_ticker_list['ticker'][i]))
- 
+    t1 = t.time()    
+    try:
+        temp_tick = yf.Ticker(elite_ticker_list['ticker'][i])
+        institutional_holder.append(temp_tick.major_holders[0][2])
+        print('{0} takes {1} seconds for institutional info'.format(elite_ticker_list['ticker'][i] , t.time()-t1))
+    except:
+        institutional_holder.append('')
+        print('{0} has no institutional holder info'.format(elite_ticker_list['ticker'][i]))
 print('All takes {0} seconds'.format(t.time()-tt))
 
-ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank})
+ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
 ticker_zack_hist['update_date'] = triggering_date = dt.datetime.now().date()
+
+ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64) else np.nan)
+
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
 
@@ -165,3 +177,6 @@ df = read_query(engine, text)
 
 for i in range(len(df)):
     plot_stock(df['ticker'][i])
+    
+    
+    
