@@ -83,7 +83,7 @@ def zacks_rank(Symbol):
 parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
 #ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
-ticker = pd.read_csv(parent_path + 'nasdaq01072022.csv')
+ticker = pd.read_csv(parent_path + 'nasdaq_list/nasdaq01072022.csv')
 
 ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == 'Y') & (ticker['ETF'] == 'N')].reset_index(drop=True)
 
