@@ -94,7 +94,9 @@ country = []
 state = []
 city = []
 company_name = []
-zack_rank = []
+
+
+current_date = datetime.now().date()
 tt = t.time()
 for i in range(len(ticker_target)):
     t0 =  t.time()
@@ -123,10 +125,7 @@ for i in range(len(ticker_target)):
         company_name.append(t_ticker.info['longName'])
     except:  
         company_name.append(np.nan)
-    try:
-        zack_rank.append(zacks_rank(ticker_target['Symbol'][i]))
-    except:
-        zack_rank.append(np.nan)
+
     print('{0} takes {1} seconds'.format(ticker_target['Symbol'][i] , t.time()-t0))
     t.sleep(1)
 print('All takes {0} seconds'.format(t.time()-tt))
@@ -137,7 +136,7 @@ ticker_target['country'] = country
 ticker_target['state'] = state
 ticker_target['city'] = city
 ticker_target['company_name'] = company_name
-ticker_target['zack_rank'] = zack_rank
+ticker_target['last_update'] = [current_date]*len(ticker_target)
 
 ticker1= ticker_target.replace(np.nan, '', regex=True)
 
