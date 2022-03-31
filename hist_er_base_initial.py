@@ -35,6 +35,7 @@ import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
 import yfinance as yf
+import urllib.request
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -67,6 +68,22 @@ def delete_action(engine, query):
         
         print('delete table action finish')
         
+def zacks_rank(Symbol):
+ 
+    # Wait for 2 seconds
+    #time.sleep(2)
+    url = 'https://quote-feed.zacks.com/index?t='+Symbol
+    downloaded_data  = urllib.request.urlopen(url)
+    data = downloaded_data.read()
+    data_str = data.decode()
+    Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
+    zack_dic = {'Strong Buy':1, 'Buy':2, 'Hold':3, 'Sell':4, 'Strong Sell':5}
+    for Rank in Z_Rank:
+       #data_str.find(Rank)# az tooye list Z_Rank doone doone check kon va yeki ra dar str_data
+       # peyda kon ;; faghat index harf aval ro retrun mikond
+       if(data_str.find(Rank) != -1):
+           return zack_dic[Rank] #data_str[res:res+len(Rank)]#
+
         
 def get_price_data(hist_earning):
     
@@ -119,7 +136,7 @@ def get_price_data(hist_earning):
 #any list of stock tickers make sense 
 parent_path = 'c:/Users/tsenh/github/awesome/'   
 #initial_stock_list = pd.read_csv(parent_path + 'nasdaq.csv')
-ticker_list  = read_query(engine, "select symbol as ticker, zack_rank from awesome.company_info where zack_rank != ''")
+ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")
 #ticker_list = initial_stock_list
 
 retry_list  = []
@@ -129,20 +146,21 @@ hist_er = pd.DataFrame()
 for ticker in ticker_list['ticker']:
     
     t0 =t.time()
-    try:
-        
-        temp_data = pd.DataFrame(si.get_earnings_history(ticker))
-        temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01') & (temp_data['startdatetimetype'] == 'TNS')]
-        temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
-        print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
-    except:
-        print('{0} cannot be captured'.format(ticker))
-        retry_list.append(ticker)
-        temp_final = pd.DataFrame()
-    if len(temp_final)>0:
-        
-        hist_er = pd.concat([hist_er, temp_final])
-        t.sleep(5)
+    
+    if zacks_rank(ticker):
+        try:
+            temp_data = pd.DataFrame(si.get_earnings_history(ticker))
+            temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01') & (temp_data['startdatetimetype'] == 'TNS')]
+            temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
+            print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
+        except:
+            print('{0} cannot be captured'.format(ticker))
+            retry_list.append(ticker)
+            temp_final = pd.DataFrame()
+        if len(temp_final)>0:
+            
+            hist_er = pd.concat([hist_er, temp_final])
+            t.sleep(5)
 #could run multiple time        
 for ticker in retry_list:
     
