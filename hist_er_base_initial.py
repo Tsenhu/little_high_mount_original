@@ -150,7 +150,7 @@ for ticker in ticker_list['ticker']:
     if zacks_rank(ticker):
         try:
             temp_data = pd.DataFrame(si.get_earnings_history(ticker))
-            temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01') & (temp_data['startdatetimetype'] == 'TNS')]
+            temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01')]
             temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
             print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
         except:
@@ -168,7 +168,7 @@ for ticker in retry_list:
     try:
         
         temp_data = pd.DataFrame(si.get_earnings_history(ticker))
-        temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01') & (temp_data['startdatetimetype'] == 'TNS')]
+        temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01')]
         temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
         print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
     except:
