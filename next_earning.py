@@ -82,7 +82,10 @@ ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite 
 #zack records backup
 elite_ticker_list = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite')
 
-prev_next_er = read_query(engine, 'select ticker, zack_rank as prev_zack_rank from awesome.next_er_date')
+prev_next_er = read_query(engine, 'select a.ticker, a.zack_rank as prev_zack_rank from( \
+select ticker, zack_rank, update_date, rank() over (partition by ticker order by update_date desc) as order_no \
+from awesome.ticker_zack_hist) a \
+where a.order_no =1')
 
 
 zack_rank = []
@@ -113,6 +116,7 @@ print('All takes {0} seconds'.format(t.time()-tt))
 ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
 ticker_zack_hist['update_date'] = triggering_date = dt.datetime.now().date()
 
+ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',',''))
 ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64) else np.nan)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
