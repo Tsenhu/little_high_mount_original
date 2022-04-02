@@ -111,7 +111,7 @@ def get_price_data(hist_earning):
             else:
         
                 current_close_price.append(temp_price.iloc[0]['Close'])
-                current_volume.append(temp_price.iloc[0]['Volume'])
+                current_volume.append(temp_price.iloc[0]['Volume']) 
                 nextday_close_price.append(temp_price.iloc[1]['Close'])
                 nextday_volume.append(temp_price.iloc[1]['Volume'])
         except:
