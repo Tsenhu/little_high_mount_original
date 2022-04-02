@@ -155,13 +155,13 @@ def get_price_data(hist_earning):
             current_volume.append(np.nan)
             nextday_close_price.append(np.nan)
             nextday_volume.append(np.nan)
-        zack_rank.append(zacks_rank(symbol))    
+         
         print('Get price of {0} takes {1} seconds'.format(symbol + ' ' + str(start_date), t.time()-t0))
         
     print('Get price of all takes {0} seconds'.format(t.time()-tt))
     
-    price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume, zack_rank)), 
-                          columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume', 'zack_rank'])
+    price_info = pd.DataFrame(list(zip(current_close_price, nextday_close_price, current_volume, nextday_volume)), 
+                          columns = ['current_close_price', 'nextday_close_price', 'current_volume', 'nextday_volume'])
     
     daydream = pd.concat([hist_earning, price_info], axis =1)
     
@@ -253,9 +253,9 @@ if len(hist_earning)>0:
     
     daydream_final = daydream[['ticker', 'date', 'epsestimate', 'epsactual', 'epssurprisepct',
            'current_close_price', 'nextday_close_price', 'current_volume',
-           'nextday_volume', 'etl_date', 'zack_rank']]
+           'nextday_volume', 'etl_date']]
 
-daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
+    daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
 
 #prepare for elite table
 new_daydream = read_query(engine, 'select * from awesome.hist_er')
