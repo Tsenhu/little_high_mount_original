@@ -91,6 +91,8 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019, save_path = save_pat
     
     earnings = read_query(engine, "select * from awesome.hist_er where ticker = '" + symbol + "' order by date")
     
+    zack_rank = read_query(engine, "select zack_rank from awesome.ticker_zack_hist where ticker = '" + symbol + "' order by update_date desc limit 1")
+    
     q_list = [] #'2019Q1'
     #logic only applies to data initial from 2019-1-1
     for i in range(len(earnings)):
@@ -118,7 +120,7 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019, save_path = save_pat
     for i in range(len(earnings)):
         earning_info.append([earnings['date'][i].date(), 
                              earnings['current_close_price'][i], 
-                             earnings['earning_quarter'][i] + ' ' + str(earnings['zack_rank'][i]) + ' increase' + \
+                             earnings['earning_quarter'][i] + ' ' + str(zack_rank['zack_rank'][0]) + ' increase' + \
                             str(round((earnings['nextday_close_price'][i]-earnings['current_close_price'][i])/earnings['current_close_price'][i], 4))]
                             )
    
