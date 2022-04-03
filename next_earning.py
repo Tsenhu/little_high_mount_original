@@ -171,7 +171,7 @@ group by ticker) avg_change on avg_change.ticker = elite.ticker \
 left join awesome.next_er_date temp on temp.ticker = elite.ticker \
 left join awesome.company_info com on com.Symbol = elite.ticker \
 where temp.er_date is not null and avg_change.avg_change >= 0.1 \
-and temp.zack_rank in (1, 5) and temp.prev_zack_rank -temp.zack_rank <=1 \
+and temp.zack_rank =1 and temp.prev_zack_rank -temp.zack_rank <=1 \
 order by temp.er_date, elite.ticker, elite.date \
 ) as a order by er_date \
 ' 
