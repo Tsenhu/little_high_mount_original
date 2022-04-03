@@ -174,7 +174,7 @@ left join (select * from (\
 select ticker, institutional_hold_float, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) a\
 where a.rank_date =1)\
 	zack on zack.ticker = elite.ticker\
-where temp.er_date is not null \
+where temp.er_date is not null and avg_change>0.08 \
 and temp.zack_rank =1 and temp.prev_zack_rank -temp.zack_rank <=2 \
 order by temp.er_date, elite.ticker, elite.date \
 ) as a order by er_date \
