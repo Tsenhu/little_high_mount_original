@@ -149,8 +149,8 @@ cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_
 
 
 text = '\
-select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, sector from ( \
-select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, com.sector \
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold_float, sector from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold_float, com.sector \
 from awesome.hist_er_elite elite \
 left join ( \
 select aa.ticker, sum(aa.same_direction)/count(*) as accurate_pct \
@@ -170,8 +170,12 @@ from awesome.hist_er_elite  \
 group by ticker) avg_change on avg_change.ticker = elite.ticker \
 left join awesome.next_er_date temp on temp.ticker = elite.ticker \
 left join awesome.company_info com on com.Symbol = elite.ticker \
-where temp.er_date is not null and avg_change.avg_change >= 0.1 \
-and temp.zack_rank =1 and temp.prev_zack_rank -temp.zack_rank <=1 \
+left join (select * from (\
+select ticker, institutional_hold_float, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) a\
+where a.rank_date =1)\
+	zack on zack.ticker = elite.ticker\
+where temp.er_date is not null \
+and temp.zack_rank =1 and temp.prev_zack_rank -temp.zack_rank <=2 \
 order by temp.er_date, elite.ticker, elite.date \
 ) as a order by er_date \
 ' 
