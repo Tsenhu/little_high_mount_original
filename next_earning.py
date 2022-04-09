@@ -171,9 +171,9 @@ group by ticker) avg_change on avg_change.ticker = elite.ticker \
 left join awesome.next_er_date temp on temp.ticker = elite.ticker \
 left join awesome.company_info com on com.Symbol = elite.ticker \
 left join (select * from (\
-select ticker, institutional_hold_float, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) a\
-where a.rank_date =1)\
-	zack on zack.ticker = elite.ticker\
+select ticker, institutional_hold_float, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) t \
+where t.rank_date =1) \
+	zack on zack.ticker = elite.ticker \
 where temp.er_date is not null and avg_change>0.08 \
 and temp.zack_rank =1 and temp.prev_zack_rank -temp.zack_rank <=2 \
 order by temp.er_date, elite.ticker, elite.date \
@@ -185,6 +185,7 @@ df = read_query(engine, text)
 
 for i in range(len(df)):
     plot_stock(df['ticker'][i])
+    
     
     
     
