@@ -116,8 +116,8 @@ print('All takes {0} seconds'.format(t.time()-tt))
 ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
 ticker_zack_hist['update_date'] = triggering_date = dt.datetime.now().date()
 
-ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',',''))
-ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64) else np.nan)
+ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
+ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
