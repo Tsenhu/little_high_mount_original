@@ -23,7 +23,7 @@ from urllib.parse import quote_plus as urlquote
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import urllib.request
-
+import matplotlib.pyplot as plt
 
 end_date = dt.datetime.now().date()
 start_date = end_date - relativedelta(days = 365)
@@ -88,3 +88,18 @@ def get_price_data(symbol):
         return
 
     return yahoo_df
+
+fig, ax1 = plt.subplots()
+fig.set_size_inches(8, 4)
+ax2 = ax1.twinx()
+ln1 = ax1.plot(df['date_category'], df['avg_volume_million'], '-g',label = 'avg_volume_million')
+ln2 = ax2.plot(df['date_category'], df['avg_amount_billion'], color = '#C875C4', linestyle = '--',  label = 'avg_amount_billion')
+
+lns = ln1+ln2
+labs = [l.get_label() for l in lns]
+
+ax1.legend(lns, labs, loc='upper left')
+ax1.set_xlabel('date')
+ax1.set(ylabel = 'avg_volume_million', title = symbol + ' hist Volume&Amount' )
+ax2.set_ylabel('avg_amount_billion')
+plt.show()
