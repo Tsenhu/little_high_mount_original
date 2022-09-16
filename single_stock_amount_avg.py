@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 end_date = dt.datetime.now().date()
 start_date = end_date - relativedelta(days = 365)
-symbol = 'TSLA'
+symbol = 'GOOS'
 
 def get_price_data(symbol):
     
@@ -88,6 +88,8 @@ def get_price_data(symbol):
         return
 
     return yahoo_df
+
+df = get_price_data(symbol)
 
 fig, ax1 = plt.subplots()
 fig.set_size_inches(8, 4)
