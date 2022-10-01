@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 end_date = dt.datetime.now().date()
 start_date = end_date - relativedelta(days = 365)
-symbol = 'GOOS'
+#symbol = 'DXCM'
 
 def get_price_data(symbol):
     
@@ -82,6 +82,22 @@ def get_price_data(symbol):
         
         yahoo_df = pd.DataFrame({'Symbol':symbol, 'date_category':date_category, 'avg_volume_million':avg_volume_million, 'avg_amount_billion':avg_amount_billion})
                 
+        df = yahoo_df
+        
+        fig, ax1 = plt.subplots()
+        fig.set_size_inches(8, 4)
+        ax2 = ax1.twinx()
+        ln1 = ax1.plot(df['date_category'], df['avg_volume_million'], '-g',label = 'avg_volume_million')
+        ln2 = ax2.plot(df['date_category'], df['avg_amount_billion'], color = '#C875C4', linestyle = '--',  label = 'avg_amount_billion')
+
+        lns = ln1+ln2
+        labs = [l.get_label() for l in lns]
+
+        ax1.legend(lns, labs, loc='upper left')
+        ax1.set_xlabel('date')
+        ax1.set(ylabel = 'avg_volume_million', title = symbol + ' hist Volume&Amount' )
+        ax2.set_ylabel('avg_amount_billion')
+        plt.show()
     
     except:
 
@@ -89,19 +105,5 @@ def get_price_data(symbol):
 
     return yahoo_df
 
-df = get_price_data(symbol)
+#df = get_price_data(symbol)
 
-fig, ax1 = plt.subplots()
-fig.set_size_inches(8, 4)
-ax2 = ax1.twinx()
-ln1 = ax1.plot(df['date_category'], df['avg_volume_million'], '-g',label = 'avg_volume_million')
-ln2 = ax2.plot(df['date_category'], df['avg_amount_billion'], color = '#C875C4', linestyle = '--',  label = 'avg_amount_billion')
-
-lns = ln1+ln2
-labs = [l.get_label() for l in lns]
-
-ax1.legend(lns, labs, loc='upper left')
-ax1.set_xlabel('date')
-ax1.set(ylabel = 'avg_volume_million', title = symbol + ' hist Volume&Amount' )
-ax2.set_ylabel('avg_amount_billion')
-plt.show()
