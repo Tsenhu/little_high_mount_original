@@ -186,8 +186,10 @@ df = read_query(engine, text)
 
 
 for i in range(len(df)):
-    plot_stock(df['ticker'][i])
+    try:
+        plot_stock(df['ticker'][i])
     
-    
+    except:
+        print('stock {0} cannot be found.'.format(df['ticker'][i]))
     
     
