@@ -149,8 +149,8 @@ cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_
 
 
 text = '\
-select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold_float, sector, level, comment from ( \
-select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold_float, com.sector, \
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold_float, sector, industry, company_name, level, comment from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold_float, com.sector, com.industry, com.company_name, \
 cf.level, cf.comment \
 from awesome.hist_er_elite elite \
 left join ( \
