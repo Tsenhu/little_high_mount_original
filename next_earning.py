@@ -183,7 +183,7 @@ order by temp.er_date, elite.ticker, elite.date \
 ' 
 df = read_query(engine, text)
 
-dt.to_csv(save_path+'weekly_report.csv', index=False)
+df.to_csv(save_path+'weekly_report.csv', index=False)
 
 for i in range(len(df)):
     try:
