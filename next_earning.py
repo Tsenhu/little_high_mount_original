@@ -90,6 +90,7 @@ where a.order_no =1')
 
 zack_rank = []
 institutional_holder = []
+Close = []
 
 tt = t.time()
 for i in range(len(elite_ticker_list)):
@@ -107,6 +108,7 @@ for i in range(len(elite_ticker_list)):
     try:
         temp_tick = yf.Ticker(elite_ticker_list['ticker'][i])
         institutional_holder.append(temp_tick.major_holders[0][2])
+        Close.append(temp_ticker.history()['Close'][-1])
         print('{0} takes {1} seconds for institutional info'.format(elite_ticker_list['ticker'][i] , t.time()-t1))
     except:
         institutional_holder.append('')
@@ -114,7 +116,9 @@ for i in range(len(elite_ticker_list)):
 print('All takes {0} seconds'.format(t.time()-tt))
 
 ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
-ticker_zack_hist['update_date'] = triggering_date = dt.datetime.now().date()
+
+ticker_zack_hist['update_date'] = dt.datetime.now().date()
+ticker_zack_hist['Close'] = Close
 
 ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
 ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
