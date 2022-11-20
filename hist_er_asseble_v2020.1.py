@@ -258,7 +258,13 @@ if len(hist_earning)>0:
     daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='append', index = False)
 
 #prepare for elite table
-new_daydream = read_query(engine, 'select * from awesome.hist_er')
+text = 'SELECT * FROM awesome.hist_er \
+where ticker in ( \
+select ticker from ( \
+select ticker, count(*) from awesome.hist_er group by ticker having count(*)>=7) a \
+) '
+
+new_daydream = read_query(engine, text)
 
 new_daydream['price_change'] = new_daydream['nextday_close_price']/new_daydream['current_close_price'] - 1
 
