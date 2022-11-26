@@ -108,11 +108,18 @@ for i in range(len(elite_ticker_list)):
     try:
         temp_tick = yf.Ticker(elite_ticker_list['ticker'][i])
         institutional_holder.append(temp_tick.major_holders[0][2])
-        Close.append(temp_tick.history()['Close'][-1])
-        print('{0} takes {1} seconds for institutional info&close_price'.format(elite_ticker_list['ticker'][i] , t.time()-t1))
+        print('{0} takes {1} seconds for institutional info'.format(elite_ticker_list['ticker'][i] , t.time()-t1))
     except:
         institutional_holder.append('')
         print('{0} has no institutional holder info'.format(elite_ticker_list['ticker'][i]))
+    t2 = t.time()
+    try:
+        Close.append(temp_tick.history()['Close'][-1])
+        print('{0} takes {1} seconds for close price info'.format(elite_ticker_list['ticker'][i] , t.time()-t2))
+    except:
+        Close.append('')
+        print('{0} has no close price info'.format(elite_ticker_list['ticker'][i]))
+        
 print('All takes {0} seconds'.format(t.time()-tt))
 
 ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
