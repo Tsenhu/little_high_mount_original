@@ -29,7 +29,7 @@ import yfinance as yf
 import csv
 from single_stock_analysis import plot_stock
 
-
+ticker_zack_hist['Close']= ticker_zack_hist.apply(lambda x: x['Close'] = np.nan if type(x['Close']) ==str)
 t_ini = t.time()
 _host = '127.0.0.1'
 _db = 'awesome'
@@ -117,7 +117,7 @@ for i in range(len(elite_ticker_list)):
         Close.append(temp_tick.history()['Close'][-1])
         print('{0} takes {1} seconds for close price info'.format(elite_ticker_list['ticker'][i] , t.time()-t2))
     except:
-        Close.append('')
+        Close.append(np.nan)
         print('{0} has no close price info'.format(elite_ticker_list['ticker'][i]))
         
 print('All takes {0} seconds'.format(t.time()-tt))
@@ -129,6 +129,8 @@ ticker_zack_hist['Close'] = Close
 
 ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
 ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
+
+ticker_zack_hist['Close'] = ticker_zack_hist['Close'].apply(lambda x: np.nan if type(x)==str else x)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
