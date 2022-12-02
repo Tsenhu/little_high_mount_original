@@ -29,7 +29,7 @@ import yfinance as yf
 import csv
 from single_stock_analysis import plot_stock
 
-ticker_zack_hist['Close']= ticker_zack_hist.apply(lambda x: x['Close'] = np.nan if type(x['Close']) ==str)
+
 t_ini = t.time()
 _host = '127.0.0.1'
 _db = 'awesome'
