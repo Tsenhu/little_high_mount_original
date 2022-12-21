@@ -27,6 +27,7 @@ import requests
 import time as t
 from dateutil.relativedelta import relativedelta
 import pandas_datareader.data as web
+import pandas_datareader
 import yfinance as yf
 from urllib.parse import quote_plus as urlquote
 
@@ -79,14 +80,16 @@ def zacks_rank(Symbol):
        # peyda kon ;; faghat index harf aval ro retrun mikond
        if(data_str.find(Rank) != -1):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
-
+'''
 parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
 #ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
 ticker = pd.read_csv(parent_path + 'nasdaq_list/nasdaq01072022.csv')
 
 ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == 'Y') & (ticker['ETF'] == 'N')].reset_index(drop=True)
-
+'''
+ticker = pandas_datareader.nasdaq_trader.get_nasdaq_symbols()
+ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == True) & (ticker['ETF']==False)].reset_index(drop=True)
 
 sector = []
 industry = []
@@ -127,7 +130,7 @@ for i in range(len(ticker_target)):
         company_name.append(np.nan)
 
     print('{0} takes {1} seconds'.format(ticker_target['Symbol'][i] , t.time()-t0))
-    t.sleep(1)
+    
 print('All takes {0} seconds'.format(t.time()-tt))
 
 ticker_target['sector'] = sector
