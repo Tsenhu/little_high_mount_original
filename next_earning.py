@@ -24,6 +24,7 @@ import time as t
 from dateutil.relativedelta import relativedelta
 import pandas_datareader.data as web
 from urllib.parse import quote_plus as urlquote
+from urllib.request import urlopen, Request
 import yahoo_fin.stock_info as si
 import yfinance as yf
 import csv
@@ -77,6 +78,26 @@ def zacks_rank(Symbol):
        if(data_str.find(Rank) != -1):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
        
+def fundamental_metric(soup, metric):
+    return soup.find(text = metric).find_next(class_='snapshot-td2').text
+
+def get_fundamental_data(df):
+    tt = t.time()
+    for symbol in df.index:
+        t0 = t.time()
+        try:
+            url = ("http://finviz.com/quote.ashx?t=" + symbol.lower())
+            req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
+            response = urlopen(req)
+            soup = BeautifulSoup(response)
+            for m in df.columns:                
+                df.loc[symbol,m] = fundamental_metric(soup,m)                
+        except Exception as e:
+            print (symbol, 'not found')
+        print('{0} takes {1} seconds for financial info'.format(symbol , t.time()-t0))
+    print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
+    return df
+       
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 120 day)> sysdate()')
 #zack records backup
@@ -95,40 +116,43 @@ Close = []
 tt = t.time()
 for i in range(len(elite_ticker_list)):
     t0 =  t.time()
-    
+    temp_ticker = elite_ticker_list['ticker'][i]
+    '''
     if i%5==0:
         t.sleep(5)
+    '''
     try:
-        zack_rank.append(zacks_rank(elite_ticker_list['ticker'][i]))
-        print('{0} takes {1} seconds for zack info'.format(elite_ticker_list['ticker'][i] , t.time()-t0))
+        zack_rank.append(zacks_rank(temp_ticker))
+        print('{0} takes {1} seconds for zack info'.format(temp_ticker , t.time()-t0))
     except:
         zack_rank.append('')
-        print('{0} has no zack info'.format(elite_ticker_list['ticker'][i]))
-    t1 = t.time()    
+        print('{0} has no zack info'.format(temp_ticker))
+        
+    t1 = t.time()  
     try:
-        temp_tick = yf.Ticker(elite_ticker_list['ticker'][i])
-        institutional_holder.append(temp_tick.major_holders[0][2])
-        print('{0} takes {1} seconds for institutional info'.format(elite_ticker_list['ticker'][i] , t.time()-t1))
-    except:
+        #http://finviz.com/quote.ashx?t=tsla
+        url = ("http://finviz.com/quote.ashx?t=" + temp_ticker.lower())
+        req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
+        response = urlopen(req)
+        soup = BeautifulSoup(response)
+        
+        institutional_holder.append(fundamental_metric(soup,'Inst Own'))
+        Close.append(fundamental_metric(soup,'Price'))
+        print('{0} takes {1} seconds for institutional and close price info'.format(temp_ticker , t.time()-t1))
+    except Exception as e:
         institutional_holder.append('')
-        print('{0} has no institutional holder info'.format(elite_ticker_list['ticker'][i]))
-    t2 = t.time()
-    try:
-        Close.append(temp_tick.history()['Close'][-1])
-        print('{0} takes {1} seconds for close price info'.format(elite_ticker_list['ticker'][i] , t.time()-t2))
-    except:
         Close.append(np.nan)
-        print('{0} has no close price info'.format(elite_ticker_list['ticker'][i]))
+        print (temp_ticker, 'not found')
         
 print('All takes {0} seconds'.format(t.time()-tt))
 
-ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold_float':institutional_holder})
+ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold':institutional_holder})
 
 ticker_zack_hist['update_date'] = dt.datetime.now().date()
 ticker_zack_hist['Close'] = Close
 
-ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
-ticker_zack_hist['institutional_hold_float'] = ticker_zack_hist['institutional_hold_float'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
+ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
+ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
 
 ticker_zack_hist['Close'] = ticker_zack_hist['Close'].apply(lambda x: np.nan if type(x)==str else x)
 
@@ -162,8 +186,8 @@ cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_
 
 
 text = '\
-select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold_float, sector, industry, company_name, level, comment from ( \
-select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold_float, com.sector, com.industry, com.company_name, \
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold, sector, industry, company_name, level, comment from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold, com.sector, com.industry, com.company_name, \
 cf.level, cf.comment \
 from awesome.hist_er_elite elite \
 left join ( \
@@ -185,7 +209,7 @@ group by ticker) avg_change on avg_change.ticker = elite.ticker \
 left join awesome.next_er_date temp on temp.ticker = elite.ticker \
 left join awesome.company_info com on com.Symbol = elite.ticker \
 left join (select * from (\
-select ticker, institutional_hold_float, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) t \
+select ticker, institutional_hold, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) t \
 where t.rank_date =1) \
 	zack on zack.ticker = elite.ticker \
 left join awesome.company_freedom cf on cf.Ticker = elite.Ticker \
