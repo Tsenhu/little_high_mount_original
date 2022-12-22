@@ -15,7 +15,7 @@ import numpy as np
 import os, os.path 
 from collections import OrderedDict
 import re
-import bs4
+from bs4 import BeautifulSoup
 import requests
 import time as t
 from dateutil.relativedelta import relativedelta
@@ -25,6 +25,7 @@ import yahoo_fin.stock_info as si
 import yfinance as yf
 import csv
 import matplotlib.pyplot as plt
+from urllib.request import urlopen, Request
 
 #from single_stock_analysis import plot_stock
 
@@ -35,6 +36,7 @@ _user = 'root'
 _password = 'Albert@25'
 engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
 save_path = 'C:/Users/tsenh/GitHub/extra_files/weekly_screen_' + str(datetime.now().date()) +'/'
+
 
 def read_query(engine, query):
         con = engine.connect()
@@ -59,47 +61,94 @@ def delete_action(engine, query):
         
         print('delete table action finish')
         
-        
-text = '\
-select update_date,\
-sum(case when zack_rank = 1 then 1 else 0 end) as zack_1, \
-sum(case when zack_rank = 2 then 1 else 0 end) as zack_2, \
-sum(case when zack_rank = 3 then 1 else 0 end) as zack_3, \
-sum(case when zack_rank = 4 then 1 else 0 end) as zack_4, \
-sum(case when zack_rank = 5 then 1 else 0 end) as zack_5 \
-from awesome.ticker_zack_hist \
-group by update_date \
-' 
-df = read_query(engine, text)
+def zack_plot():        
+    text = '\
+    select update_date,\
+    sum(case when zack_rank = 1 then 1 else 0 end) as zack_1, \
+    sum(case when zack_rank = 2 then 1 else 0 end) as zack_2, \
+    sum(case when zack_rank = 3 then 1 else 0 end) as zack_3, \
+    sum(case when zack_rank = 4 then 1 else 0 end) as zack_4, \
+    sum(case when zack_rank = 5 then 1 else 0 end) as zack_5 \
+    from awesome.ticker_zack_hist \
+    group by update_date \
+    ' 
+    df = read_query(engine, text)
+    
+    df['pos_neg_total'] = df['zack_1'] + df['zack_2'] + df['zack_4'] + df['zack_5']
+    df['zack_1_pct'] = df['zack_1']/df['pos_neg_total']
+    df['zack_2_pct'] = df['zack_2']/df['pos_neg_total']
+    df['zack_4_pct'] = df['zack_4']/df['pos_neg_total']
+    df['zack_5_pct'] = df['zack_5']/df['pos_neg_total']
+    fig, ax1 = plt.subplots()
+    fig.set_size_inches(12, 6)
+    '''
+    ax2 = ax1.twinx()
+    ax3 = ax1.twinx()
+    ax4 = ax1.twinx()
+    ax5 = ax1.twinx()
+    '''
+    
+    #ax3.spines.right.set_position(("axes", 1.1))
+    ln1 = ax1.plot(df['update_date'], df['zack_1_pct'], '-g',label = 'zack_1_pct')
+    ln2 = ax1.plot(df['update_date'], df['zack_2_pct'], color = 'c', linestyle = '-',  label = 'zack_2_pct')
+    #ln3 = ax3.plot(df['update_date'], df['zack_3'], color = 'y', linestyle = '-.', label = 'zack_3_pct')
+    ln4 = ax1.plot(df['update_date'], df['zack_4_pct'], color = 'm', linestyle = '-.', label = 'zack_4_pct')
+    ln5 = ax1.plot(df['update_date'], df['zack_5_pct'], color = 'r', linestyle = '-.', label = 'zack_5_pct')
+    
+    lns = ln1+ln2+ln3+ln4+ln5
+    labs = [l.get_label() for l in lns]
+    
+    ax1.legend(lns, labs, loc='upper left')
+    ax1.set_xlabel('updaet_date')
+    ax1.set(ylabel = 'avg_volume_million', title = ' hist Volume&Amount' )
+    #ax2.set_ylabel('avg_amount_billion')
+    #ax3.set_ylabel('avg_price')
+    
+    plt.show()
+    
+def fundamental_metric(soup, metric):
+    return soup.find(text = metric).find_next(class_='snapshot-td2').text
 
-df['pos_neg_total'] = df['zack_1'] + df['zack_2'] + df['zack_4'] + df['zack_5']
-df['zack_1_pct'] = df['zack_1']/df['pos_neg_total']
-df['zack_2_pct'] = df['zack_2']/df['pos_neg_total']
-df['zack_4_pct'] = df['zack_4']/df['pos_neg_total']
-df['zack_5_pct'] = df['zack_5']/df['pos_neg_total']
-fig, ax1 = plt.subplots()
-fig.set_size_inches(12, 6)
-'''
-ax2 = ax1.twinx()
-ax3 = ax1.twinx()
-ax4 = ax1.twinx()
-ax5 = ax1.twinx()
-'''
+def get_fundamental_data(df):
+    tt = t.time()
+    for symbol in df.index:
+        t0 = t.time()
+        try:
+            url = ("http://finviz.com/quote.ashx?t=" + symbol.lower())
+            req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
+            response = urlopen(req)
+            soup = BeautifulSoup(response)
+            for m in df.columns:                
+                df.loc[symbol,m] = fundamental_metric(soup,m)                
+        except Exception as e:
+            print (symbol, 'not found')
+        print('{0} takes {1} seconds for financial info'.format(symbol , t.time()-t0))
+    print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
+    return df
 
-#ax3.spines.right.set_position(("axes", 1.1))
-ln1 = ax1.plot(df['update_date'], df['zack_1_pct'], '-g',label = 'zack_1_pct')
-ln2 = ax1.plot(df['update_date'], df['zack_2_pct'], color = 'c', linestyle = '-',  label = 'zack_2_pct')
-#ln3 = ax3.plot(df['update_date'], df['zack_3'], color = 'y', linestyle = '-.', label = 'zack_3_pct')
-ln4 = ax1.plot(df['update_date'], df['zack_4_pct'], color = 'm', linestyle = '-.', label = 'zack_4_pct')
-ln5 = ax1.plot(df['update_date'], df['zack_5_pct'], color = 'r', linestyle = '-.', label = 'zack_5_pct')
+metric = [
+          'P/B',
+          'P/E',
+          'Forward P/E',
+          'PEG',
+          'Debt/Eq',
+          'EPS (ttm)',
+          'ROE',
+          'ROI',
+          'EPS Q/Q',
+          'Inst Own',
+          'Perf YTD',
+          'Prev Close',
+          '52W High',
+          '52W Low',
+          '52W Range'
+          ]
 
-lns = ln1+ln2+ln3+ln4+ln5
-labs = [l.get_label() for l in lns]
+#ticker_list = ['TSLA', 'DXCM', 'AMZN', 'GOOS']
+ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")['ticker'].tolist()
+df = pd.DataFrame(index=ticker_list,columns=metric)
+df = get_fundamental_data(df)
 
-ax1.legend(lns, labs, loc='upper left')
-ax1.set_xlabel('updaet_date')
-ax1.set(ylabel = 'avg_volume_million', title = ' hist Volume&Amount' )
-#ax2.set_ylabel('avg_amount_billion')
-#ax3.set_ylabel('avg_price')
-
-plt.show()
+refine_df = df.loc[~df['P/B'].isnull() ].reset_index()
+refine_df.rename(columns = {'index':'ticker'}, inplace=True)
+refine_df.to_sql(name='company_fa', con=engine, schema = 'awesome', if_exists='replace', index = False)
