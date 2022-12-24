@@ -18,7 +18,7 @@ import numpy as np
 import os, os.path 
 from collections import OrderedDict
 import re
-import bs4
+from bs4 import BeautifulSoup
 import requests
 import time as t
 from dateutil.relativedelta import relativedelta
@@ -81,22 +81,7 @@ def zacks_rank(Symbol):
 def fundamental_metric(soup, metric):
     return soup.find(text = metric).find_next(class_='snapshot-td2').text
 
-def get_fundamental_data(df):
-    tt = t.time()
-    for symbol in df.index:
-        t0 = t.time()
-        try:
-            url = ("http://finviz.com/quote.ashx?t=" + symbol.lower())
-            req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
-            response = urlopen(req)
-            soup = BeautifulSoup(response)
-            for m in df.columns:                
-                df.loc[symbol,m] = fundamental_metric(soup,m)                
-        except Exception as e:
-            print (symbol, 'not found')
-        print('{0} takes {1} seconds for financial info'.format(symbol , t.time()-t0))
-    print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
-    return df
+
        
 
 ticker  = read_query(engine, 'SELECT distinct ticker FROM awesome.hist_er_elite where date_add(date, interval 120 day)> sysdate()')
@@ -123,7 +108,7 @@ for i in range(len(elite_ticker_list)):
     '''
     try:
         zack_rank.append(zacks_rank(temp_ticker))
-        print('{0} takes {1} seconds for zack info'.format(temp_ticker , t.time()-t0))
+        print('{0} takes {1} seconds for zack info'.format(temp_ticker , round(t.time()-t0,2)))
     except:
         zack_rank.append('')
         print('{0} has no zack info'.format(temp_ticker))
@@ -134,17 +119,30 @@ for i in range(len(elite_ticker_list)):
         url = ("http://finviz.com/quote.ashx?t=" + temp_ticker.lower())
         req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
         response = urlopen(req)
-        soup = BeautifulSoup(response)
-        
+        soup = BeautifulSoup(response ,'html.parser')
+        '''
         institutional_holder.append(fundamental_metric(soup,'Inst Own'))
+        
+        '''
+        inst_own = fundamental_metric(soup,'Inst Own')
+        if inst_own == '-':
+            try: 
+                
+                temp_tick = yf.Ticker(temp_ticker)
+                institutional_holder.append(temp_tick.major_holders[0][1])
+            except:
+                institutional_holder.append('')
+        else:
+            institutional_holder.append(fundamental_metric(soup,'Inst Own'))
+            
         Close.append(fundamental_metric(soup,'Price'))
-        print('{0} takes {1} seconds for institutional and close price info'.format(temp_ticker , t.time()-t1))
+        print('{0} takes {1} seconds for institutional and close price info'.format(temp_ticker , round(t.time()-t1,2)))
     except Exception as e:
         institutional_holder.append('')
         Close.append(np.nan)
         print (temp_ticker, 'not found')
         
-print('All takes {0} seconds'.format(t.time()-tt))
+print('All takes {0} seconds'.format(round(t.time()-tt,2)))
 
 ticker_zack_hist = pd.DataFrame({'ticker':elite_ticker_list['ticker'], 'zack_rank':zack_rank, 'institutional_hold':institutional_holder})
 
@@ -154,7 +152,8 @@ ticker_zack_hist['Close'] = Close
 ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
 ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
 
-ticker_zack_hist['Close'] = ticker_zack_hist['Close'].apply(lambda x: np.nan if type(x)==str else x)
+#ticker_zack_hist['Close'] = ticker_zack_hist['Close'].apply(lambda x: np.nan if type(x)==str else x)
+ticker_zack_hist['Close'] = ticker_zack_hist['Close'].astype(float)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
