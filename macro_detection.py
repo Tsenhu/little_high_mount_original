@@ -126,29 +126,54 @@ def get_fundamental_data(df):
     print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
     return df
 
-metric = [
-          'P/B',
-          'P/E',
-          'Forward P/E',
-          'PEG',
-          'Debt/Eq',
-          'EPS (ttm)',
-          'ROE',
-          'ROI',
-          'EPS Q/Q',
-          'Inst Own',
-          'Perf YTD',
-          'Prev Close',
-          '52W High',
-          '52W Low',
-          '52W Range'
-          ]
+def comp_fa():
+    metric = [
+              'Market Cap',
+              'P/B',
+              'P/E',
+              'Forward P/E',
+              'PEG',
+              'Debt/Eq',
+              'EPS (ttm)',
+              'ROE',
+              'ROI',
+              'EPS Q/Q',
+              'Inst Own',
+              'Perf YTD',
+              'Prev Close',
+              '52W High',
+              '52W Low',
+              '52W Range'
+              ]
+    
+    #ticker_list = ['TSLA', 'DXCM', 'AMZN', 'GOOS']
+    ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")['ticker'].tolist()
+    df = pd.DataFrame(index=ticker_list,columns=metric)
+    df = get_fundamental_data(df)
+    
+    refine_df = df.loc[~df['P/B'].isnull() ].reset_index()
+    refine_df.rename(columns = {'index':'ticker', 'P/B': 'PB', 'P/E': 'PE', 'Debt/Eq':'Debt_Eq'}, inplace=True)
+    refine_df.to_sql(name='company_fa', con=engine, schema = 'awesome', if_exists='replace', index = False)
+    
 
-#ticker_list = ['TSLA', 'DXCM', 'AMZN', 'GOOS']
-ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")['ticker'].tolist()
-df = pd.DataFrame(index=ticker_list,columns=metric)
-df = get_fundamental_data(df)
+comp_sql = 'SELECT fa.*, info.sector, info.industry, info.country \
+            FROM awesome.company_fa fa \
+            left join awesome.company_info info on fa.ticker = info.symbol \
+            where fa.PB != "-" and fa.PE != "-"  \
+            '
+            
+comp_info = read_query(engine, comp_sql)
 
-refine_df = df.loc[~df['P/B'].isnull() ].reset_index()
-refine_df.rename(columns = {'index':'ticker'}, inplace=True)
-refine_df.to_sql(name='company_fa', con=engine, schema = 'awesome', if_exists='replace', index = False)
+comp_target  = comp_info.loc[(comp_info['Market Cap']!= '-') & (comp_info['Debt_Eq']!= '-'), ]
+
+comp_target['mk_cap'] = comp_target['Market Cap'].apply(lambda x: float(x[:-1])*1000000 if x[-1] == 'M' else float(x[:-1])*1000000000)
+
+
+'PB, PE, Forward PE, Debt eq, EPS(TTM), \
+
+'
+
+comp_target['lowest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[0].strip()))
+comp_target['highest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[1].strip()))
+
+comp_target[['PE', 'PB', 'Forward P/E', 'Debt_Eq', 'EPS (ttm)']] = comp_target[['PE', 'PB', 'Forward P/E', 'Debt_Eq', 'EPS (ttm)']].apply(pd.to_numeric, errors='coerce')
