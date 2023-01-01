@@ -86,7 +86,7 @@ parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 #ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
 ticker = pd.read_csv(parent_path + 'nasdaq_list/nasdaq01012023.csv', keep_default_na=False)
 
-BAD_CHARS = ['.', '+', '-', '=']
+BAD_CHARS = ['.', '+', '-', '=', '$']
 pat = '|'.join(['({})'.format(re.escape(c)) for c in BAD_CHARS])
 
 ticker = ticker[~ticker['NASDAQ Symbol'].str.contains(pat)]
