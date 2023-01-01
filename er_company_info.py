@@ -30,7 +30,7 @@ import pandas_datareader.data as web
 import pandas_datareader
 import yfinance as yf
 from urllib.parse import quote_plus as urlquote
-
+import re
 t_ini = t.time()
 _host = '127.0.0.1'
 _db = 'awesome'
@@ -80,16 +80,19 @@ def zacks_rank(Symbol):
        # peyda kon ;; faghat index harf aval ro retrun mikond
        if(data_str.find(Rank) != -1):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
-'''
+
 parent_path = 'c:/Users/tsenh/github/little_high_mount_original/'
 
 #ticker  = read_query(engine, 'select distinct ticker from awesome.hist_er')
-ticker = pd.read_csv(parent_path + 'nasdaq_list/nasdaq01072022.csv')
+ticker = pd.read_csv(parent_path + 'nasdaq_list/nasdaq01012023.csv', keep_default_na=False)
 
-ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == 'Y') & (ticker['ETF'] == 'N')].reset_index(drop=True)
-'''
-ticker = pandas_datareader.nasdaq_trader.get_nasdaq_symbols()
-ticker_target = ticker.loc[(ticker['Nasdaq Traded'] == True) & (ticker['ETF']==False)].reset_index(drop=True)
+BAD_CHARS = ['.', '+', '-', '=']
+pat = '|'.join(['({})'.format(re.escape(c)) for c in BAD_CHARS])
+
+ticker = ticker[~ticker['NASDAQ Symbol'].str.contains(pat)]
+
+ticker_target = ticker.loc[(ticker['ETF'] == 'N')].reset_index(drop=True)
+
 
 sector = []
 industry = []
