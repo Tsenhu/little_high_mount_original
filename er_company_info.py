@@ -146,6 +146,56 @@ ticker_target['last_update'] = [current_date]*len(ticker_target)
 
 ticker1= ticker_target.replace(np.nan, '', regex=True)
 
+#screen again to fill the blank
 
-
-ticker1.to_sql(name='company_info', con=engine, schema = 'awesome', if_exists='replace', index = False)
+for i in range(len(ticker1)):
+    tt0 = t.time()
+    if ticker1['sector'][i] == '':    
+        tt_ticker = yf.Ticker(ticker1['Symbol'][i])
+        try:
+            ticker1['sector'][i] = tt_ticker.info['sector']
+            print('{0} refill sector info'.format(ticker1['Symbol'][i]))
+        except:
+            print('{0} still with no sector info'.format(ticker1['Symbol'][i]))
+            
+        if ticker1['industry'][i] == '':
+           try:
+               ticker1['industry'][i] = tt_ticker.info['industry']
+               print('{0} refill industry info'.format(ticker1['Symbol'][i] ))
+           except:
+               print('{0} still with no industry info'.format(ticker1['Symbol'][i]))
+               
+        if ticker1['country'][i] == '':
+           try:
+               ticker1['country'][i] = tt_ticker.info['country']
+               print('{0} refill country info'.format(ticker1['Symbol'][i] ))
+           except:
+               print('{0} still with no country info'.format(ticker1['Symbol'][i]))
+               
+        if ticker1['state'][i] == '':
+           try:
+               ticker1['state'][i] = tt_ticker.info['state']
+               print('{0} refill state info'.format(ticker1['Symbol'][i] ))
+           except:
+               print('{0} still with no state info'.format(ticker1['Symbol'][i]))
+               
+        if ticker1['city'][i] == '':
+           try:
+               ticker1['city'][i] = tt_ticker.info['city']
+               print('{0} refill city info'.format(ticker1['Symbol'][i] ))
+           except:
+               print('{0} still with no city info'.format(ticker1['Symbol'][i]))
+               
+        if ticker1['company_name'][i] == '':
+           try:
+               ticker1['company_name'][i] = tt_ticker.info['longName']
+               print('{0} refill company_name info'.format(ticker1['Symbol'][i] ))
+           except:
+               print('{0} still with no company_name info'.format(ticker1['Symbol'][i]))
+               
+    print('{0} takes {1} seconds'.format(ticker_target['Symbol'][i] , t.time()-tt0))
+    
+print('All takes {0} seconds'.format(t.time()-tt))
+        
+final_ticker = ticker1.loc[ticker1['sector']!= '',].reset_index(drop=True)
+final_ticker.to_sql(name='company_info', con=engine, schema = 'awesome', if_exists='replace', index = False)
