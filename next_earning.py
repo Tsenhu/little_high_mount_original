@@ -185,8 +185,8 @@ cur_elite_ticker.to_sql(name='next_er_date', con=engine, schema = 'awesome', if_
 
 
 text = '\
-select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold, sector, industry, company_name, level, comment from ( \
-select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold, com.sector, com.industry, com.company_name, \
+select distinct ticker, er_date, zack_rank, prev_zack_rank, accurate_pct, avg_change, institutional_hold,  close as current_close, sector, industry, company_name, level, comment from ( \
+select elite.ticker, trend.accurate_pct, avg_change.avg_change, temp.er_date, temp.zack_rank, temp.prev_zack_rank, zack.institutional_hold, zack.close, com.sector, com.industry, com.company_name, \
 cf.level, cf.comment \
 from awesome.hist_er_elite elite \
 left join ( \
@@ -208,7 +208,7 @@ group by ticker) avg_change on avg_change.ticker = elite.ticker \
 left join awesome.next_er_date temp on temp.ticker = elite.ticker \
 left join awesome.company_info com on com.Symbol = elite.ticker \
 left join (select * from (\
-select ticker, institutional_hold, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) t \
+select ticker, institutional_hold, close, rank() over (partition by ticker order by update_date desc) as rank_date from awesome.ticker_zack_hist) t \
 where t.rank_date =1) \
 	zack on zack.ticker = elite.ticker \
 left join awesome.company_freedom cf on cf.Ticker = elite.Ticker \
