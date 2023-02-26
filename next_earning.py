@@ -219,7 +219,9 @@ order by temp.er_date, elite.ticker, elite.date \
 ' 
 df = read_query(engine, text)
 
-df.to_csv(save_path+'weekly_report.csv', index=False)
+df['etl_date'] = dt.datetime.now().date()
+
+df.to_sql(name = 'stock_er_weekly_update', con = engine, schema = 'awesome', if_exists = 'append', index = False)
 
 for i in range(len(df)):
     try:
