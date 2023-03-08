@@ -139,10 +139,8 @@ parent_path = 'c:/Users/tsenh/github/awesome/'
 ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")
 #ticker_list = initial_stock_list
 
-retry_list  = []
 
-hist_er = pd.DataFrame()
-
+'''
 for ticker in ticker_list['ticker']:
     
     t0 =t.time()
@@ -179,14 +177,38 @@ for ticker in retry_list:
         
         hist_er = pd.concat([hist_er, temp_final])
         t.sleep(12)
+'''
+
+hist_er = pd.DataFrame()
+
+for ticker in ticker_list['ticker']:
+    t0= t.time()
+    temp_url = 'https://www.alphavantage.co/query?function=EARNINGS&symbol=' + ticker + '&apikey=' + 'DHXUWE4M05O9WHWW'
+    
+    r = requests.get(temp_url)
+    try:
+        data = pd.DataFrame(r.json()['quarterlyEarnings'][:24])
+    except:
+        data = pd.DataFrame()
+        print('{0} cannot be found'.format(ticker))
+              
+    if len(data)>0:
         
-hist_er_clean = hist_er.dropna()
-hist_er_clean.insert(1, 'date', hist_er_clean['startdatetime'].str.split('T').str[0])
+        data['ticker'] = ticker
+    
+        hist_er = pd.concat([hist_er, data])
+        print('{0} has been captured, cost {1} seconds'.format(ticker, str(t.time() - t0)))
+    t.sleep(14)        
+    
+
+hist_er[['fiscalDateEnding', 'reportedDate']] = hist_er[['fiscalDateEnding', 'reportedDate']].apply(pd.to_datetime, errors='coerce')
+hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']] = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].apply(pd.to_numeric, errors='coerce')
+'''
 hist_er_clean['date'] = pd.to_datetime(hist_er_clean['date'])
 hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by = ['ticker', 'date']).reset_index(drop=True)
 
-
-    
+hist_er_clean = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].dropna()
+'''    
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
 daydream = daydream.dropna()
