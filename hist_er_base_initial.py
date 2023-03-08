@@ -180,6 +180,8 @@ for ticker in retry_list:
 '''
 
 hist_er = pd.DataFrame()
+#if we cannot catch the data in the first time we try it again later
+retry_list = []
 
 for ticker in ticker_list['ticker']:
     t0= t.time()
@@ -190,16 +192,41 @@ for ticker in ticker_list['ticker']:
         data = pd.DataFrame(r.json()['quarterlyEarnings'][:24])
     except:
         data = pd.DataFrame()
+        retry_list.append(ticker)
         print('{0} cannot be found'.format(ticker))
-              
+        
     if len(data)>0:
         
         data['ticker'] = ticker
     
         hist_er = pd.concat([hist_er, data])
         print('{0} has been captured, cost {1} seconds'.format(ticker, str(t.time() - t0)))
-    t.sleep(14)        
+    else:
+        print('{0} has no data'.format(ticker))
+    t.sleep(12)        
+
+for ticker in retry_list:
     
+    t0=t.time()
+    temp_url = 'https://www.alphavantage.co/query?function=EARNINGS&symbol=' + ticker + '&apikey=' + 'DHXUWE4M05O9WHWW'
+    
+    r = requests.get(temp_url)
+    try:
+        data = pd.DataFrame(r.json()['quarterlyEarnings'][:24])
+    except:
+        data = pd.DataFrame()
+        retry_list.append(ticker)
+        print('Second time: {0} cannot be found'.format(ticker))
+        
+    if len(data)>0:
+        
+        data['ticker'] = ticker
+    
+        hist_er = pd.concat([hist_er, data])
+        print('Second time: {0} has been captured, cost {1} seconds'.format(ticker, str(t.time() - t0)))
+    else:
+        print('Second time: {0} has no data'.format(ticker))
+    t.sleep(12)        
 
 hist_er[['fiscalDateEnding', 'reportedDate']] = hist_er[['fiscalDateEnding', 'reportedDate']].apply(pd.to_datetime, errors='coerce')
 hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']] = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].apply(pd.to_numeric, errors='coerce')
