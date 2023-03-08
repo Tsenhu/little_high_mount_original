@@ -12,9 +12,13 @@ Created on Fri Dec 31 00:50:54 2021
 '''
 
 '''
-To Do List
-
-It takes more than 40h to finish the process.  Need to split the process into 2 or 3 process by companies. 
+alpha vantage api: DHXUWE4M05O9WHWW
+                   NWZPVM5PMTELG7KX
+                   9YAS0QPC5GFJ1PPP
+                   1UFEXZQK35XSLQX8
+                   J0MON5KYLM5IX3TU
+                   GPWR823PM8D1HY0M
+                   8Z4ES4L24CKRLIR3
 '''
 
 import pandas as pd
