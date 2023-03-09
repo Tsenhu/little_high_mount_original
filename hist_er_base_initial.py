@@ -219,7 +219,7 @@ for ticker in retry_list:
         data = pd.DataFrame(r.json()['quarterlyEarnings'][:24])
     except:
         data = pd.DataFrame()
-        retry_list.append(ticker)
+        
         print('Second time: {0} cannot be found'.format(ticker))
         
     if len(data)>0:
@@ -234,6 +234,9 @@ for ticker in retry_list:
 
 hist_er[['fiscalDateEnding', 'reportedDate']] = hist_er[['fiscalDateEnding', 'reportedDate']].apply(pd.to_datetime, errors='coerce')
 hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']] = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].apply(pd.to_numeric, errors='coerce')
+hist_er = hist_er.rename(columns = {'reportedDate':'date', 'reportedEPS':'epsactual', 'estimatedEPS':'epsestimate', 'surprisePercentage':'epssurprisepct'})
+hist_er_clean = hist_er[['ticker', 'fiscalDateEnding', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by=['ticker', 'date']).reset_index(drop=True)
+hist_er_final = hist_er_clean.dropna()
 '''
 hist_er_clean['date'] = pd.to_datetime(hist_er_clean['date'])
 hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by = ['ticker', 'date']).reset_index(drop=True)
