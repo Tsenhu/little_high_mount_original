@@ -312,7 +312,7 @@ def recommendation_cnt(ticker_list, hist_er):
 #daydream_final = recommendation_cnt(daydream_ticker, daydream)
 daydream_final = daydream
 
-daydream_final = pd.merge(daydream_final, ticker_list, on='ticker')
+#daydream_final = pd.merge(daydream_final, ticker_list, on='ticker')
 
 daydream_final['etl_date'] = pd.to_datetime(datetime.now().date())
 
