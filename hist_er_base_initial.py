@@ -104,7 +104,7 @@ def get_price_data(hist_earning):
         end_date = start_date + relativedelta(days = 10)
         
         try:
-            temp_price = web.DataReader(symbol, 'yahoo', start_date, end_date).iloc[0:2].reset_index()
+            temp_price = yf.download(symbol, start_date, end_date).iloc[0:2].reset_index()
             if len(temp_price)!=2:
                 
                 current_close_price.append(np.nan)
