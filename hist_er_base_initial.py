@@ -309,7 +309,7 @@ def recommendation_cnt(ticker_list, hist_er):
     return daydream_final
 
 #daydream_final = recommendation_cnt(daydream_ticker, daydream)
-daydream_final = daydream
+daydream_final = daydream.copy()
 
 #daydream_final = pd.merge(daydream_final, ticker_list, on='ticker')
 
