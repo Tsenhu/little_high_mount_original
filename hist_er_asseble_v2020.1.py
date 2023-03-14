@@ -136,7 +136,7 @@ def get_price_data(hist_earning):
         end_date = start_date + relativedelta(days = 10)
         
         try:
-            temp_price = web.DataReader(symbol, 'yahoo', start_date, end_date).iloc[0:2].reset_index()
+            temp_price = yf.download(symbol, start_date, end_date).iloc[0:2].reset_index()
             
             if len(temp_price)!=2:
                 
@@ -251,7 +251,7 @@ if len(hist_earning)>0:
     
     daydream['etl_date'] = pd.to_datetime(datetime.now().date())
     
-    daydream_final = daydream[['ticker', 'date', 'epsestimate', 'epsactual', 'epssurprisepct',
+    daydream_final = daydream[['ticker', 'fiscalDateEnding', 'date', 'epsestimate', 'epsactual', 'epssurprisepct',
            'current_close_price', 'nextday_close_price', 'current_volume',
            'nextday_volume', 'etl_date']]
 
