@@ -321,3 +321,21 @@ if 'index' in daydream_final.columns:
 
     
 daydream_final.to_sql(name='hist_er', con=engine, schema = 'awesome', if_exists='replace', index = False)
+
+text = 'SELECT * FROM awesome.hist_er \
+where ticker in ( \
+select ticker from ( \
+select ticker, count(*) from awesome.hist_er group by ticker having count(*)>=7) a \
+) '
+
+new_daydream = read_query(engine, text)
+
+new_daydream['price_change'] = new_daydream['nextday_close_price']/new_daydream['current_close_price'] - 1
+
+
+volume_detect = new_daydream.groupby('ticker')['current_volume', 'nextday_volume'].mean().reset_index()
+
+volume_detect_elite = volume_detect[(volume_detect['current_volume'] + volume_detect['nextday_volume'])/2 >= 1000000]
+
+daydream_elite = new_daydream[new_daydream['ticker'].isin(volume_detect_elite['ticker'].to_list())]
+daydream_elite.to_sql(name='hist_er_elite', con=engine, schema = 'awesome', if_exists='replace', index = False)
