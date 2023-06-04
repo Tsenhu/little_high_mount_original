@@ -242,6 +242,7 @@ hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','eps
 
 hist_er_clean = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].dropna()
 '''    
+
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
 daydream = daydream.dropna()
