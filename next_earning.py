@@ -152,7 +152,7 @@ ticker_zack_hist['Close'] = Close
 ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: x.replace(',','')  if (x!='' and not type(x) == np.float64) else np.nan)
 ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].apply(lambda x: round(float(x.split('%')[0])/100,4) if (x!='' and not type(x) == np.float64 and not type(x) == np.float) else np.nan)
 
-#ticker_zack_hist['Close'] = ticker_zack_hist['Close'].apply(lambda x: np.nan if type(x)==str else x)
+ticker_zack_hist['Close'].replace('-', np.nan, inplace=True)
 ticker_zack_hist['Close'] = ticker_zack_hist['Close'].astype(float)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
