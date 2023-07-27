@@ -142,17 +142,25 @@ parent_path = 'c:/Users/tsenh/github/awesome/'
 ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")
 #ticker_list = initial_stock_list
 
+#if we cannot catch the data in the first time we try it again later
+retry_list = []
+hist_er = pd.DataFrame()
 
-'''
 for ticker in ticker_list['ticker']:
     
     t0 =t.time()
     
     if zacks_rank(ticker):
         try:
-            temp_data = pd.DataFrame(si.get_earnings_history(ticker))
-            temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01')]
-            temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
+            #temp_data = pd.DataFrame(si.get_earnings_history(ticker))
+            temp_ticker = yf.Ticker(ticker)
+            temp_data = temp_ticker.get_earnings_dates(limit=40).reset_index().rename(columns ={'Earnings Date':'date', 
+                                                                                                 'EPS Estimate':'epsestimate', 
+                                                                                                 'Reported EPS':'epsactual', 
+                                                                                                 'Surprise(%)':'epssurprisepct'}).dropna()
+            temp_data['ticker'] = ticker
+            #temp_filter = temp_data.loc[(temp_data['date']>'2019-01-01')]
+            temp_final = temp_data[['ticker', 'date', 'epsestimate', 'epsactual', 'epssurprisepct']]
             print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
         except:
             print('{0} cannot be captured'.format(ticker))
@@ -168,9 +176,14 @@ for ticker in retry_list:
     t0 =t.time()
     try:
         
-        temp_data = pd.DataFrame(si.get_earnings_history(ticker))
-        temp_filter = temp_data.loc[(temp_data['startdatetime']>'2019-01-01')]
-        temp_final = temp_filter[['ticker', 'startdatetime', 'epsestimate', 'epsactual', 'epssurprisepct']]
+        temp_ticker = yf.Ticker(ticker)
+        temp_data = temp_ticker.get_earnings_dates(limit=40).reset_index().rename(columns ={'Earnings Date':'date', 
+                                                                                            'EPS Estimate':'epsestimate', 
+                                                                                            'Reported EPS':'epsactual', 
+                                                                                            'Surprise(%)':'epssurprisepct'}).dropna()
+        temp_data['ticker'] = ticker
+        #temp_filter = temp_data.loc[(temp_data['date']>'2019-01-01')]
+        temp_final = temp_data[['ticker', 'date', 'epsestimate', 'epsactual', 'epssurprisepct']]
         print('Grab earning report data for {0} , used {1} seconds.'.format(ticker,  str(t.time() - t0)))
     except:
         print('{0} cannot be captured'.format(ticker))
@@ -182,9 +195,8 @@ for ticker in retry_list:
         t.sleep(12)
 '''
 
-hist_er = pd.DataFrame()
-#if we cannot catch the data in the first time we try it again later
-retry_list = []
+
+
 
 for ticker in ticker_list['ticker']:
     t0= t.time()
@@ -237,11 +249,11 @@ hist_er = hist_er.rename(columns = {'reportedDate':'date', 'reportedEPS':'epsact
 hist_er_clean = hist_er[['ticker', 'fiscalDateEnding', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by=['ticker', 'date']).reset_index(drop=True)
 hist_er_final = hist_er_clean.dropna()
 '''
-hist_er_clean['date'] = pd.to_datetime(hist_er_clean['date'])
+hist_er_clean['date'] = pd.to_datetime(hist_er['date'])
 hist_er_final = hist_er_clean[['ticker', 'date', 'epsestimate', 'epsactual','epssurprisepct']].sort_values(by = ['ticker', 'date']).reset_index(drop=True)
 
-hist_er_clean = hist_er[['reportedEPS', 'estimatedEPS', 'surprise', 'surprisePercentage']].dropna()
-'''    
+
+   
 
 daydream = get_price_data(hist_er_final).drop_duplicates()
 
