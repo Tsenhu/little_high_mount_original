@@ -77,7 +77,7 @@ def zacks_rank(Symbol):
     # Wait for 2 seconds
     #time.sleep(2)
     url = 'https://quote-feed.zacks.com/index?t='+Symbol
-    downloaded_data  = urllib.request.urlopen(url)
+    downloaded_data  = urllib.request.urlopen(url,timeout=20)
     data = downloaded_data.read()
     data_str = data.decode()
     Z_Rank =["Strong Buy","Buy","Hold","Strong Sell", "Sell"]
