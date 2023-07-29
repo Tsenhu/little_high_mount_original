@@ -154,7 +154,7 @@ for ticker in ticker_list['ticker']:
     try:
         #temp_data = pd.DataFrame(si.get_earnings_history(ticker))
         temp_ticker = yf.Ticker(ticker)
-        temp_data = temp_ticker.get_earnings_dates(limit=40).reset_index().rename(columns ={'Earnings Date':'date', 
+        temp_data = temp_ticker.get_earnings_dates(limit=20).reset_index().rename(columns ={'Earnings Date':'date', 
                                                                                              'EPS Estimate':'epsestimate', 
                                                                                              'Reported EPS':'epsactual', 
                                                                                              'Surprise(%)':'epssurprisepct'}).dropna()
