@@ -64,9 +64,9 @@ def delete_action(engine, query):
         print('delete table action finish')
 
 
-def get_stock_data(ticker, start_year = 2019):
+def get_stock_data(ticker, start_year):
     
-    return si.get_data(ticker, str(start_year) + '/1/1', datetime.now().date()).reset_index().rename(columns={'index':'date'})
+    return  yf.Ticker(ticker).history(start=str(start_year) + '-1-1', end=datetime.now().date()).reset_index()
 
 def zacks_rank(Symbol):
  
@@ -85,11 +85,18 @@ def zacks_rank(Symbol):
            return zack_dic[Rank] #data_str[res:res+len(Rank)]#
 
 
-def plot_stock(symbol, save_image = 'Y', start_year = 2019, save_path = save_path):
+def plot_stock(symbol, save_image = 'Y', save_path = save_path):
     
+    
+    
+    earnings = read_query(engine, "select * from awesome.hist_er where ticker = '" + symbol + "' and year(date)> year(curdate())-5 order by date")
+    earnings['date'] = pd.to_datetime(earnings['date'], utc=True).dt.date
+    
+    
+    start_year = earnings['date'][0].year
     data = get_stock_data(symbol, start_year)
-    
-    earnings = read_query(engine, "select * from awesome.hist_er where ticker = '" + symbol + "' order by date")
+    data['date'] = pd.to_datetime(data['Date'], utc=True).dt.date
+    data.rename(columns = {'Open':'open', 'High':'high', 'Low':'low', 'Close':'close', 'Volume':'volume'}, inplace=True)
     
     zack_rank = read_query(engine, "select zack_rank from awesome.ticker_zack_hist where ticker = '" + symbol + "' order by update_date desc limit 1")
     
@@ -118,7 +125,7 @@ def plot_stock(symbol, save_image = 'Y', start_year = 2019, save_path = save_pat
     
     earning_info = []
     for i in range(len(earnings)):
-        earning_info.append([earnings['date'][i].date(), 
+        earning_info.append([earnings['date'][i], 
                              earnings['current_close_price'][i], 
                              earnings['earning_quarter'][i] + ' ' + str(zack_rank['zack_rank'][0]) + ' increase' + \
                             str(round((earnings['nextday_close_price'][i]-earnings['current_close_price'][i])/earnings['current_close_price'][i], 4))]
