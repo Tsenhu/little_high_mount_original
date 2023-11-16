@@ -80,16 +80,22 @@ for i in range(len(weekly_update)):
     
     try:
         temp_price = yf.Ticker(temp_ticker).history(start=start_date, end=end_date).iloc[:2].reset_index()
+        er_close.append(temp_price['Close'][0])
+        er_volume.append(temp_price['Volume'][0])
+        er_next_close.append(temp_price['Close'][1])
+        er_next_volume.append(temp_price['Volume'][1])
+        print('{0} {1} takes {2} seconds'.format(temp_ticker, str(er_date) , t.time()-t0))
     except:
         temp_price = pd.DataFrame()
-        
-    er_close.append(temp_price['Close'][0])
-    er_volume.append(temp_price['Volume'][0])
-    er_next_close.append(temp_price['Close'][1])
-    er_next_volume.append(temp_price['Volume'][1])
-    print('{0} {1} takes {2} seconds'.format(temp_ticker, str(er_date) , t.time()-t0))
+        er_close.append(np.nan)
+        er_volume.append(np.nan)
+        er_next_close.append(np.nan)
+        er_next_volume.append(np.nan)
+
     
 price_info = pd.DataFrame(list(zip(er_close, er_volume, er_next_close, er_next_volume)), 
                           columns = ['er_close', 'er_volume', 'er_next_close', 'er_next_volume'])
     
 backtest= pd.concat([weekly_update, price_info], axis =1)
+
+backtest['win_or_lose'] = backtest.apply(lambda x: 1 if x['er_close']<x['er_next_close'] else 0, axis=1 )
