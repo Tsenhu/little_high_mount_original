@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 #import requests
 import time as t
 from dateutil.relativedelta import relativedelta
-
+import matplotlib.pyplot as plt
 #from urllib.parse import quote_plus as urlquote
 #import yahoo_fin.stock_info as si
 import yfinance as yf
@@ -20,7 +20,8 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 #from numpy import mean
 import seaborn as sns
-
+import random
+import numpy as np
 
 symbol_list = ['TSLA', 'DXCM', 'AMZN', 'PLTR', 'COIN', 'NFLX', 'ROKU']
 
@@ -77,3 +78,28 @@ def option_tracker(ticker='TSLA', expiration_date = "2023-12-15" ):
     return call_options, put_options
 
 _, p = option_tracker()
+
+
+def simulate_series(num_steps):
+    series = []
+    
+    for _ in range(num_steps):
+        # Generate a random number to determine whether it's a positive or negative return
+        probability = random.uniform(0, 1)
+        
+        if probability <= 0.2:  # 20% probability for negative return
+            return_value = random.uniform(-0.5, -0.2)
+        else:  # 80% probability for positive return
+            return_value = random.uniform(0.5, 1)
+        
+        series.append(round(return_value,4)+1)
+
+    return reduce(lambda x,y:x*y, series)
+
+
+temp = []
+for i in range(10000):
+    temp.append(simulate_series(30))
+    
+plt.hist(temp, bins='auto', alpha=0.7, color='blue', edgecolor='black')    
+quantiles = np.percentile(temp, [25, 50, 75])
