@@ -81,6 +81,9 @@ _, p = option_tracker()
 
 
 def simulate_series(num_steps):
+    '''
+    simulate accumulative yearly return for a long time with different probability and return rates
+    '''
     series = []
     
     for _ in range(num_steps):
@@ -103,3 +106,69 @@ for i in range(10000):
     
 plt.hist(temp, bins='auto', alpha=0.7, color='blue', edgecolor='black')    
 quantiles = np.percentile(temp, [25, 50, 75])
+
+
+def transaction_tracker(ticker_list=['TSLA']):
+    
+    curr_date = dt.datetime.now().date() + relativedelta(days=1)
+    initial_date = curr_date - relativedelta(days = 365*5)
+    
+    transaction_tracker = pd.DataFrame(columns = ['ticker', 'day0_volume_M', 'day0_amount_M', 'day1_volume_M', 'day1_amount_M', 
+                                                  'week1_volume_M', 'week1_amount_M', 'week2_volume_M', 'week2_amount_M', 
+                                                  'week4_volume_M', 'week4_amount_M', 'week12_volume_M', 'week12_amount_M',
+                                                  'week26_volume_M', 'week26_amount_M', 'week52_volume_M', 'week52_amount_M',
+                                                  'week156_volume_M', 'week156_amount_M'])
+    for i, ticker in enumerate(ticker_list):
+        
+        temp_row = [ticker]
+        temp_data = yf.Ticker(ticker).history(start=initial_date, end=curr_date).reset_index()
+        
+        temp_data['trans_amount'] = (temp_data['Open'] + temp_data['Close'])/2*temp_data['Volume']/1000000 # M level
+        
+        #0_day transaction volume and amount
+        day0_volume_M = temp_data.iloc[-1]['Volume']/1000000 # M level
+        day0_amount_M = temp_data.iloc[-1]['trans_amount'] # M level
+        
+        #1_day transaction volume and amount
+        day1_volume_M = temp_data.iloc[-2]['Volume']/1000000 # M level
+        day1_amount_M = temp_data.iloc[-2]['trans_amount']
+        
+        #1_week transaction volume and amount
+        week1_volume_M = np.mean(temp_data.iloc[-6:-1]['Volume'])/1000000 # M level
+        week1_amount_M = np.mean(temp_data.iloc[-6:-1]['trans_amount'])
+        
+        #2_week transaction volume and amount
+        week2_volume_M = np.mean(temp_data.iloc[-5*2-1:-1]['Volume'])/1000000 # M level
+        week2_amount_M = np.mean(temp_data.iloc[-5*2-1:-1]['trans_amount'])
+        
+        #4_week transaction volume and amount
+        week4_volume_M = np.mean(temp_data.iloc[-5*4-1:-1]['Volume'])/1000000 # M level
+        week4_amount_M = np.mean(temp_data.iloc[-5*4-1:-1]['trans_amount'])
+        
+        #12_week transaction volume and amount
+        week12_volume_M = np.mean(temp_data.iloc[-5*12-1:-1]['Volume'])/1000000 # M level
+        week12_amount_M = np.mean(temp_data.iloc[-5*12-1:-1]['trans_amount'])
+        
+        #26_week transaction volume and amount
+        week26_volume_M = np.mean(temp_data.iloc[-5*26-1:-1]['Volume'])/1000000 # M level
+        week26_amount_M = np.mean(temp_data.iloc[-5*26-1:-1]['trans_amount'])
+        
+        #52_week transaction volume and amount
+        week52_volume_M = np.mean(temp_data.iloc[-5*52-1:-1]['Volume'])/1000000 # M level
+        week52_amount_M = np.mean(temp_data.iloc[-5*52-1:-1]['trans_amount'])
+        
+        #156_week transaction volume and amount
+        week156_volume_M = np.mean(temp_data.iloc[-5*156-1:-1]['Volume'])/1000000 # M level
+        week156_amount_M = np.mean(temp_data.iloc[-5*156-1:-1]['trans_amount'])
+        
+        temp_row += [day0_volume_M, day0_amount_M, day1_volume_M, day1_amount_M, week1_volume_M, week1_amount_M,
+                     week2_volume_M, week2_amount_M, week4_volume_M, week4_amount_M, week12_volume_M, week12_amount_M,
+                     week26_volume_M, week26_amount_M, week52_volume_M, week52_amount_M, week156_volume_M, week156_amount_M]
+        
+        transaction_tracker.loc[len(transaction_tracker)] = temp_row
+        
+    return transaction_tracker
+
+test = transaction_tracker(['TSLA', 'DXCM', 'QCOM', 'PDD'])
+
+test_again = test.transpose()
