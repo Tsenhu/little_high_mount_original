@@ -5,8 +5,8 @@ Created on Fri Dec 29 19:14:44 2023
 @author: tsenh
 """
 import pandas as pd
-#from sqlalchemy import create_engine
-#import sqlalchemy
+from sqlalchemy import create_engine
+import sqlalchemy
 import datetime as dt
 from datetime import datetime, timedelta
 #import talib as ta
@@ -14,12 +14,12 @@ from datetime import datetime, timedelta
 #import os, os.path 
 #from collections import OrderedDict
 #import re
-#import bs4
-#import requests
+import bs4
+import requests
 import time as t
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
-#from urllib.parse import quote_plus as urlquote
+from urllib.parse import quote_plus as urlquote
 #import yahoo_fin.stock_info as si
 import yfinance as yf
 #import urllib.request
@@ -62,10 +62,9 @@ def delete_action(engine, query):
         
 
 ''' TO DO
-0. rerun company_fa
-1. load company_fa data to get fa info and ticker list
-stock_list =  read_query(engine, "select * from awesome.stock_er_weekly_update where er_date<curdate()")
-2. add time record to the code
+
+
+
 
 '''
 def price_tracker(symbol_list:list):
@@ -77,40 +76,55 @@ def price_tracker(symbol_list:list):
     end_date = dt.datetime.now().date() + relativedelta(days = 1)
     start_date = dt.datetime(2023,1,1)
     
+    tt = t.time()
+    
+    ticker = []
+    year_begin_price = []
+    year_min_price = []
+    year_max_price = []
+    year_end_price = []
+    avg_volume = []
+    avg_amount = []
+    price_change_min = []
+    price_change_mean = []
+    price_change_max = []
     
     for i in range(len(symbol_list)):
-        
+        t0= t.time()
         df = pd.DataFrame()
         symbol = symbol_list[i]
         
-        ticker = []
-        year_begin_price = []
-        year_min_price = []
-        year_max_price = []
-        year_end_price = []
-        avg_volume = []
-        avg_amount = []
-        price_change_min = []
-        price_change_mean = []
-        price_change_max = []
+        try:
+            temp_price = yf.Ticker(symbol).history(start=start_date, end=end_date).reset_index()
+            temp_price['ticker'] = symbol
+            temp_price['price_change'] = (temp_price['Close']-temp_price['Open'])/temp_price['Open']
+            temp_price['amount'] = (temp_price['Low']+temp_price['High'])*temp_price['Volume']/2
+            df = pd.concat([df, temp_price], axis= 0)
+            
+            ticker.append(symbol)
+            year_begin_price.append(df['Close'][0])
+            year_min_price.append(df['Close'].min())
+            year_max_price.append(df['Close'].max())
+            year_end_price.append(df['Close'].iloc[-1])
+            avg_volume.append(df['Volume'].mean())
+            avg_amount.append(df['amount'].mean())
+            price_change_min.append(df['price_change'].min())
+            price_change_mean.append(df['price_change'].mean())
+            price_change_max.append(df['price_change'].max())
+        except:
+            ticker.append(symbol)
+            year_begin_price.append(np.nan)
+            year_min_price.append(np.nan)
+            year_max_price.append(np.nan)
+            year_end_price.append(np.nan)
+            avg_volume.append(np.nan)
+            avg_amount.append(np.nan)
+            price_change_min.append(np.nan)
+            price_change_mean.append(np.nan)
+            price_change_max.append(np.nan)
         
-        
-        temp_price = yf.Ticker(symbol).history(start=start_date, end=end_date).reset_index()
-        temp_price['ticker'] = symbol
-        temp_price['price_change'] = (temp_price['Close']-temp_price['Open'])/temp_price['Open']
-        temp_price['amount'] = (temp_price['Low']+temp_price['High'])*temp_price['Volume']/2
-        df = pd.concat([df, temp_price], axis= 0)
-        
-        ticker.append(symbol)
-        year_begin_price.append(df['Close'][0])
-        year_min_price.append(df['Close'].min())
-        year_max_price.append(df['Close'].max())
-        year_end_price.append(df['Close'].iloc[-1])
-        avg_volume.append(df['Volume'].mean())
-        avg_amount.append(df['amount'].mean())
-        price_change_min.append(df['price_change'].min())
-        price_change_mean.append(df['price_change'].mean())
-        price_change_max.append(df['price_change'].max())
+        print('{0} takes {1} seconds for financial info'.format(symbol , t.time()-t0))
+    
         
     price_info = pd.DataFrame(list(zip(ticker, year_begin_price, year_min_price, year_max_price, year_end_price,
                                        avg_volume, avg_amount,
@@ -118,5 +132,20 @@ def price_tracker(symbol_list:list):
                               columns = ['ticker', 'year_begin_price', 'year_min_price', 'year_max_price', 'year_end_price',
                                          'avg_volume', 'avg_amount',
                                          'price_change_min', 'price_change_mean', 'price_change_max'])
-
+    
+    print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
     return price_info
+
+comp_sql = 'SELECT fa.*, info.sector, info.industry, info.country \
+            FROM awesome.company_fa fa \
+            left join awesome.company_info info on fa.ticker = info.symbol \
+            where fa.PB != "-" and fa.PE != "-"  \
+            '
+            
+comp_info = read_query(engine, comp_sql)
+
+symbol_list = comp_info['ticker']
+
+price_info = price_tracker(symbol_list)
+
+price_info.to_sql(name='2023_analysis', con=engine, schema = 'awesome', if_exists='replace', index = False)
