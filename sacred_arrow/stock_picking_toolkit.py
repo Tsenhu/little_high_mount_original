@@ -172,3 +172,28 @@ def transaction_tracker(ticker_list=['TSLA']):
 test = transaction_tracker(['TSLA', 'DXCM', 'QCOM', 'PDD'])
 
 test_again = test.transpose()
+
+'''
+
+'''
+def weekly_change(ticker:str, start_year = 2021):
+    
+    start_date = dt.datetime(start_year,1,1) - relativedelta(days=7)
+    end_date = dt.datetime.now().date() + relativedelta(days=1)
+    
+    stock_info = yf.Ticker(ticker).history(start=start_date, end=end_date).reset_index()
+    
+    stock_info['price_change'] = round((stock_info['Close']-stock_info['Close'].shift(1))/stock_info['Close'].shift(1),4)
+    
+    #https://www.w3schools.com/python/python_datetime.asp
+    
+    stock_info['year_int'] = stock_info['Date'].apply(lambda x: int(x.strftime('%Y')))
+    
+    
+    
+    stock_info['month_str'] = stock_info['Date'].apply(lambda x: x.strftime('%b'))
+    stock_info['month_int'] = stock_info['Date'].apply(lambda x: int(x.strftime('%m')))
+    
+    stock_info['weekday_str'] = stock_info['Date'].apply(lambda x: x.strftime('%a'))
+    stock_info['weekday_int'] = stock_info['Date'].apply(lambda x: int(x.strftime('%w')))
+    
