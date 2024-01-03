@@ -197,3 +197,11 @@ def weekly_change(ticker:str, start_year = 2021):
     stock_info['weekday_str'] = stock_info['Date'].apply(lambda x: x.strftime('%a'))
     stock_info['weekday_int'] = stock_info['Date'].apply(lambda x: int(x.strftime('%w')))
     
+    stock_radar = stock_info[stock_info['year_int']>2020]
+    
+    first_rows = stock_radar.groupby(['year_int','month_str']).head(1).reset_index()
+    last_rows = stock_radar.groupby(['year_int','month_str']).tail(1).reset_index()
+    
+    month_change = pd.concat([first_rows, last_rows], axis=0).sort_values(by= 'Date')
+    
+    last_rows['month_diff'] = round((last_rows['Close'] - first_rows['Close'])/first_rows['Close'], 4)
