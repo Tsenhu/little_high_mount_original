@@ -145,7 +145,7 @@ def plot_stock(symbol, save_image = 'Y', save_path = save_path):
 
     ax1.legend(lns, labs, loc='upper left')
     ax1.set_xlabel('date')
-    ax1.set(ylabel = 'close price', title = symbol + ' price&volume trend. Zacks rank: ' + str(zacks_rank(symbol)))
+    ax1.set(ylabel = 'close price', title = symbol)
     ax2.set_ylabel('volume')
     
     ax1.xaxis.set_major_locator(mdates.YearLocator())
