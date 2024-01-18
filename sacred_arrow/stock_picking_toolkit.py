@@ -1,29 +1,22 @@
 import pandas as pd
-#from sqlalchemy import create_engine
-#import sqlalchemy
+from sqlalchemy import create_engine
 import datetime as dt
 from datetime import datetime, timedelta
-#import talib as ta
-#import numpy as np
-#import os, os.path 
-#from collections import OrderedDict
-#import re
-#import bs4
-#import requests
+from bs4 import BeautifulSoup
+import requests
 import time as t
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
-#from urllib.parse import quote_plus as urlquote
-#import yahoo_fin.stock_info as si
+from urllib.parse import quote_plus as urlquote
 import yfinance as yf
-#import urllib.request
 import matplotlib.pyplot as plt
-#from numpy import mean
 import seaborn as sns
 import random
 import numpy as np
+import pandas_datareader as pdr
+from urllib.request import urlopen, Request
 
-symbol_list = ['TSLA', 'DXCM', 'AMZN', 'PLTR', 'COIN', 'NFLX', 'ROKU']
+symbol_list = ['TSLA', 'DXCM', 'AMZN', 'PLTR', 'COIN', 'NFLX', 'ROKU', 'LSCC']
 
 
 
@@ -169,7 +162,7 @@ def transaction_tracker(ticker_list=['TSLA']):
         
     return transaction_tracker
 
-test = transaction_tracker(['TSLA', 'DXCM', 'QCOM', 'PDD'])
+test = transaction_tracker(['TSLA', 'DXCM', 'QCOM', 'PDD', 'LSCC'])
 
 test_again = test.transpose()
 
@@ -177,7 +170,9 @@ test_again = test.transpose()
 
 '''
 def weekly_change(ticker:str, start_year = 2021):
-    
+    '''
+    target year to now, weekly stock price difference
+    '''
     start_date = dt.datetime(start_year,1,1) - relativedelta(days=7)
     end_date = dt.datetime.now().date() + relativedelta(days=1)
     
@@ -205,3 +200,74 @@ def weekly_change(ticker:str, start_year = 2021):
     month_change = pd.concat([first_rows, last_rows], axis=0).sort_values(by= 'Date')
     
     last_rows['month_diff'] = round((last_rows['Close'] - first_rows['Close'])/first_rows['Close'], 4)
+    
+    return last_rows 
+
+'''
+fa info for sp500
+'''
+def fundamental_metric(soup, metric):
+    return soup.find(text = metric).find_next(class_='snapshot-td2').text
+
+def get_fundamental_data(df):
+    tt = t.time()
+    for symbol in df.index:
+        t0 = t.time()
+        try:
+            url = ("http://finviz.com/quote.ashx?t=" + symbol.lower())
+            req = Request(url=url,headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}) 
+            response = urlopen(req)
+            soup = BeautifulSoup(response)
+            for m in df.columns:                
+                df.loc[symbol,m] = fundamental_metric(soup,m)                
+        except Exception as e:
+            print (symbol, 'not found')
+        print('{0} takes {1} seconds for financial info'.format(symbol , t.time()-t0))
+    print('All takes {0} seconds, average {1} seconds per ticker'.format(t.time()-tt, (t.time()-tt)/len(df)))
+    return df
+
+
+
+def comp_fa():
+    _host = '127.0.0.1'
+    _db = 'awesome'
+    _user = 'root'
+    _password = 'Albert@25'
+    engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
+    
+    metric = [
+              'Market Cap',
+              'P/B',
+              'P/E',
+              'Forward P/E',
+              'PEG',
+              'Debt/Eq',
+              'EPS (ttm)',
+              'ROE',
+              'ROI',
+              'EPS Q/Q',
+              'Inst Own',
+              'Perf YTD',
+              'Prev Close',
+              '52W High',
+              '52W Low',
+              '52W Range'
+              ]
+    
+    #ticker_list = ['TSLA', 'DXCM', 'AMZN', 'GOOS']
+    #ticker_list  = read_query(engine, "select symbol as ticker from awesome.company_info")['ticker'].tolist()
+    
+    table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
+    sp500 = table[0]
+    
+    df = pd.DataFrame(index=sp500['Symbol'].tolist(),columns=metric)
+    df = get_fundamental_data(df)
+    
+    refine_df = df.loc[~df['P/B'].isnull() ].reset_index()
+    refine_df.rename(columns = {'index':'ticker', 'P/B': 'PB', 'P/E': 'PE', 'Debt/Eq':'Debt_Eq'}, inplace=True)
+    
+    result = pd.merge(refine_df, sp500, left_on = 'ticker', right_on = 'Symbol', how = 'left')
+    result.to_sql(name='sp500_fa', con=engine, schema = 'awesome', if_exists='replace', index = False)
+
+
+
