@@ -55,22 +55,32 @@ def price_tracker(symbol_list:list):
 
 
 
-def option_tracker(ticker='TSLA', expiration_date = "2023-12-15" ):
+def option_tracker(ticker='TSLA'):
     '''
     track a ticker's option price for a certain date
     '''
     stock = yf.Ticker(ticker)
+    option_dates = stock.options
     
+    option_all = pd.DataFrame()
+    for date in option_dates:
     # Get options data for the specified expiration date
-    options = stock.option_chain(expiration_date)
+        options = stock.option_chain(date)
 
     # Access call and put option data
-    call_options = options.calls
-    put_options = options.puts
+        call_options = options.calls
+        call_options.columns = [str(col) + '_call' for col in call_options.columns]
+        put_options = options.puts
+        put_options.columns = [str(col) + '_put' for col in put_options.columns]
+        
+        call_put = pd.merge(call_options, put_options, left_on ='strike_call', right_on= 'strike_put', how = 'outer').fillna(0)
+        call_put['expire_date'] = date
+        call_put['ticker'] = ticker
+        
+        option_all = pd.concat([option_all, call_put])
+    return option_all
 
-    return call_options, put_options
 
-_, p = option_tracker()
 
 
 def simulate_series(num_steps):
