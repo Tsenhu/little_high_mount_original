@@ -16,9 +16,38 @@ import numpy as np
 import pandas_datareader as pdr
 from urllib.request import urlopen, Request
 
-symbol_list = ['TSLA', 'DXCM', 'AMZN', 'PLTR', 'COIN', 'NFLX', 'ROKU', 'LSCC']
+symbol_list = ['AAPL','MSFT','GOOGL','AMZN', 'NVDA', 'TSLA', 'META']
 
+t_ini = t.time()
+_host = '127.0.0.1'
+_db = 'awesome'
+_user = 'root'
+_password = 'Albert@25'
+engine = create_engine('mysql://'+_user+':'+urlquote(_password)+'@'+_host)
+save_path = 'C:/Users/tsenh/GitHub/extra_files/weekly_screen_' + str(datetime.now().date()) +'/'
 
+def read_query(engine, query):
+        con = engine.connect()
+        #print("connection = ", con)
+        try:
+            #print('query running')
+            results = con.execute(query)
+            names = results.keys()
+            #print('creating df')
+            df = pd.DataFrame(results.fetchall(), columns=names)
+            return df
+        finally:
+            if con is not None:
+                con.close()
+
+def delete_action(engine, query):
+        con = engine.connect()
+        
+        con.execute(query)
+        
+        con.close()
+        
+        print('delete table action finish')
 
 def price_tracker(symbol_list:list):
     
@@ -80,7 +109,30 @@ def option_tracker(ticker='TSLA'):
         option_all = pd.concat([option_all, call_put])
     return option_all
 
-
+def market_maker(stock_list:list, save_sql = 'N'):
+    
+    '''
+    work together with function "option_tracker"
+    estimate stock market by the toper stock option weights
+    '''
+    market_indicator = pd.DataFrame()
+    for stock in stock_list:
+        
+        stock_option = option_tracker(stock)
+        
+        stock_option['call_put_diff'] = stock_option.apply(lambda x: (x['lastPrice_call']*x['volume_call'] - x['lastPrice_put']*x['volume_put'])*100, axis = 1)
+        
+        stock_option_weight = stock_option.groupby(['expire_date', 'ticker'])['call_put_diff'].sum().reset_index(drop=False)
+        
+        market_indicator = pd.concat([market_indicator, stock_option_weight])
+    
+    market_indicator['record_date'] = datetime.now().date()
+    pivot_market = market_indicator.pivot(index='expire_date', columns='ticker', values='call_put_diff').reset_index()
+    
+    
+    if save_sql == 'Y':
+        market_indicator.to_sql(name='market_option_weights', con=engine, schema = 'awesome', if_exists='append', index = False)
+    return pivot_market
 
 
 def simulate_series(num_steps):
