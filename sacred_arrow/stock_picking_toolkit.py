@@ -305,6 +305,7 @@ def comp_fa():
               'PEG',
               'Debt/Eq',
               'EPS (ttm)',
+              'ROA',
               'ROE',
               'ROI',
               'EPS Q/Q',
@@ -326,8 +327,20 @@ def comp_fa():
     df = get_fundamental_data(df)
     
     refine_df = df.loc[~df['P/B'].isnull() ].reset_index()
-    refine_df.rename(columns = {'index':'ticker', 'P/B': 'PB', 'P/E': 'PE', 'Debt/Eq':'Debt_Eq'}, inplace=True)
+    refine_df.rename(columns = {'index':'ticker', 'P/B': 'PB', 'P/E': 'PE', 'Debt/Eq':'Debt_Eq', '52W High':'Distance_52W_High', '52W Low':'Distance_52W_Low'}, inplace=True)
     
+    refine_df[['52W Low', '52W High']] = refine_df['52W Range'].str.split('-', expand=True)
+    #convert str to numeric
+    
+    refine_df[['ROA', 'ROE', 'ROI', 'EPS Q/Q', 'Inst Own', 'Perf YTD', 'Distance_52W_High', 'Distance_52W_Low']] = \
+        refine_df[['ROA', 'ROE', 'ROI', 'EPS Q/Q', 'Inst Own', 'Perf YTD', 'Distance_52W_High', 'Distance_52W_Low']].replace({'%':''},regex=True)
+    
+    refine_df[['ROA', 'ROE', 'ROI', 'EPS Q/Q', 'Inst Own', 'Perf YTD', 'Distance_52W_High', 'Distance_52W_Low']] = \
+         refine_df[['ROA', 'ROE', 'ROI', 'EPS Q/Q', 'Inst Own', 'Perf YTD', 'Distance_52W_High', 'Distance_52W_Low']].apply(pd.to_numeric, errors='coerce') / 100
+    
+    refine_df[['PB', 'PE', 'Forward P/E', 'PEG', 'Debt_Eq','EPS (ttm)', '52W Low', '52W High']] = \
+        refine_df[['PB', 'PE', 'Forward P/E', 'PEG', 'Debt_Eq','EPS (ttm)', '52W Low', '52W High']].apply(lambda x: pd.to_numeric(x, errors='coerce'))
+        
     result = pd.merge(refine_df, sp500, left_on = 'ticker', right_on = 'Symbol', how = 'left')
     result.to_sql(name='sp500_fa', con=engine, schema = 'awesome', if_exists='replace', index = False)
 
