@@ -154,6 +154,7 @@ ticker_zack_hist['institutional_hold'] = ticker_zack_hist['institutional_hold'].
 
 ticker_zack_hist['Close'].replace('-', np.nan, inplace=True)
 ticker_zack_hist['Close'] = ticker_zack_hist['Close'].astype(float)
+ticker_zack_hist['zack_rank'].replace('', np.nan, inplace=True)
 
 ticker_zack_hist.to_sql(name='ticker_zack_hist', con=engine, schema='awesome', if_exists='append', index=False)
 
