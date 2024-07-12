@@ -16,7 +16,7 @@ import numpy as np
 import pandas_datareader as pdr
 from urllib.request import urlopen, Request
 
-symbol_list = ['AAPL','MSFT','GOOGL','AMZN', 'NVDA', 'TSLA', 'META']
+symbol_list = ['AAPL','MSFT','GOOGL','AMZN', 'NVDA', 'TSLA', 'META', 'BIDU', 'LSCC','NFLX']
 
 t_ini = t.time()
 _host = '127.0.0.1'
@@ -224,7 +224,7 @@ def transaction_tracker(ticker_list=['TSLA']):
         
     return transaction_tracker
 
-test = transaction_tracker(['TSLA', 'DXCM', 'QCOM', 'PDD', 'LSCC'])
+test = transaction_tracker(['TSLA', 'BIDU', 'QCOM', 'PDD', 'LSCC'])
 
 test_again = test.transpose()
 
