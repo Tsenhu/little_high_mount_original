@@ -347,7 +347,7 @@ new_daydream = read_query(engine, text)
 new_daydream['price_change'] = new_daydream['nextday_close_price']/new_daydream['current_close_price'] - 1
 
 
-volume_detect = new_daydream.groupby('ticker')['current_volume', 'nextday_volume'].mean().reset_index()
+volume_detect = new_daydream.groupby('ticker')[['current_volume', 'nextday_volume']].mean().reset_index()
 
 volume_detect_elite = volume_detect[(volume_detect['current_volume'] + volume_detect['nextday_volume'])/2 >= 1000000]
 
