@@ -171,8 +171,8 @@ comp_target  = comp_info.loc[(comp_info['Market Cap']!= '-') & (comp_info['Debt_
 comp_target['mk_cap'] = comp_target['Market Cap'].apply(lambda x: float(x[:-1])*1000000 if x[-1] == 'M' else float(x[:-1])*1000000000)
 
 
-comp_target['lowest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[0].strip()))
-comp_target['highest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[1].strip()))
+comp_target['lowest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[0].strip()) if x.split('-')[0].strip() else None)
+comp_target['highest'] = comp_target['52W Range'].apply(lambda x: float(x.split('-')[1].strip()) if x.split('-')[1].strip() else None)
 
 comp_target[['PE', 'PB', 'Forward P/E', 'Debt_Eq', 'EPS (ttm)']] = comp_target[['PE', 'PB', 'Forward P/E', 'Debt_Eq', 'EPS (ttm)']].apply(pd.to_numeric, errors='coerce')
 
@@ -189,6 +189,6 @@ comp_target['ROI'] = comp_target['ROI']/100
 comp_target['Inst Own'] = comp_target['Inst Own']/100
 
 comp_target['return_max'] = comp_target['highest']/comp_target['Prev Close']
+comp_target['etl_date'] = dt.datetime.now().date()
 
-
-test = comp_target.groupby(['sector']).agg(['min', 'mean', 'median', 'max'])
+test = comp_target.groupby(['sector'])[['PB', 'PE', 'ROE', 'ROI', 'Inst Own','return_max']].agg(['min', 'mean', 'median', 'max'])
